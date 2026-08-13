@@ -1,0 +1,156 @@
+.hero-section {
+  padding: 60px 50px;
+  position: relative;
+  z-index: 5;
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.hero-title {
+  font-size: 5rem;
+  font-weight: 800;
+  color: #0b2b73;
+  margin: 0;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.hero-subtitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #555;
+  letter-spacing: 3px;
+  margin-top: 10px;
+  margin-bottom: 25px;
+}
+
+.hero-divider {
+  width: 50px;
+  height: 3px;
+  background-color: #cb5336;
+  margin-bottom: 25px;
+}
+
+.hero-heading {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a2a40;
+  line-height: 1.3;
+  margin-bottom: 20px;
+}
+
+.hero-description {
+  font-size: 1.1rem;
+  color: #555;
+  line-height: 1.5;
+  margin-bottom: 40px;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 50px;
+}
+
+.btn-primary {
+  background-color: #cb5336;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 28px;
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 6px 15px rgba(203, 83, 54, 0.3);
+  transition: transform 0.2s, background-color 0.3s;
+}
+
+.btn-primary:hover {
+  background-color: #b54528;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: #333;
+  border: 1.5px solid #cb5336;
+  border-radius: 8px;
+  padding: 12px 28px;
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-secondary:hover {
+  background-color: rgba(203, 83, 54, 0.05);
+}
+
+.btn-icon {
+  font-size: 1.1rem;
+}
+
+.info-icon {
+  color: #cb5336;
+  font-weight: bold;
+}
+
+.hero-features {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+}
+
+.feature-icon-container {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background-color: #fcece9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.feature-icon {
+  font-size: 1.4rem;
+  color: #cb5336;
+}
+
+.feature-item h4 {
+  margin: 0 0 5px 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1a2a40;
+}
+
+.feature-item p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #777;
+  line-height: 1.4;
+}
+
+.feature-divider {
+  width: 1px;
+  height: 45px;
+  background-color: #f1a38f;
+  margin-top: 15px;
+}

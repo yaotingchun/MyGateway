@@ -1,0 +1,67 @@
+.app-container {
+  min-height: 100vh;
+  position: relative;
+  background-size: cover;
+  background-position: center 25%;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Left-side white gradient so text is always legible */
+.app-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(105deg,
+      rgba(255,255,255,1)   0%,
+      rgba(255,255,255,0.95) 40%,
+      rgba(255,255,255,0.25) 72%,
+      rgba(255,255,255,0)   100%
+    ),
+    linear-gradient(to top,
+      rgba(255,255,255,1)  0%,
+      rgba(255,255,255,0) 22%
+    );
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Wave ribbon — sits above overlay, below main content */
+.wave-ribbon-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 38%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Hero text + login card */
+.main-content {
+  display: flex;
+  flex: 1;
+  position: relative;
+  z-index: 4;          /* above wave ribbons */
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .wave-ribbon-wrapper {
+    height: 28%;
+    opacity: 0.85;
+  }
+}
+
+@media (max-width: 600px) {
+  .wave-ribbon-wrapper {
+    height: 20%;
+    opacity: 0.75;
+  }
+}
