@@ -11,7 +11,7 @@
 .hero-title {
   font-size: 5rem;
   font-weight: 800;
-  color: #0b2b73;
+  color: #304166;
   margin: 0;
   line-height: 1;
   letter-spacing: -1px;
@@ -29,7 +29,7 @@
 .hero-divider {
   width: 50px;
   height: 3px;
-  background-color: #cb5336;
+  background-color: #EE4932;
   margin-bottom: 25px;
 }
 
@@ -55,7 +55,7 @@
 }
 
 .btn-primary {
-  background-color: #cb5336;
+  background-color: #2759CD;
   color: white;
   border: none;
   border-radius: 8px;
@@ -66,19 +66,19 @@
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  box-shadow: 0 6px 15px rgba(203, 83, 54, 0.3);
+  box-shadow: 0 6px 15px rgba(54, 104, 203, 0.3);
   transition: transform 0.2s, background-color 0.3s;
 }
 
 .btn-primary:hover {
-  background-color: #b54528;
+  background-color: #304166;
   transform: translateY(-2px);
 }
 
 .btn-secondary {
   background-color: transparent;
   color: #333;
-  border: 1.5px solid #cb5336;
+  border: 1.5px solid #2759CD;
   border-radius: 8px;
   padding: 12px 28px;
   font-weight: 600;
@@ -99,7 +99,7 @@
 }
 
 .info-icon {
-  color: #cb5336;
+  color: #2759CD;
   font-weight: bold;
 }
 
@@ -131,7 +131,7 @@
 
 .feature-icon {
   font-size: 1.4rem;
-  color: #cb5336;
+  color: #304166;
 }
 
 .feature-item h4 {
@@ -151,6 +151,6 @@
 .feature-divider {
   width: 1px;
   height: 45px;
-  background-color: #f1a38f;
+  background-color: #8fc0f1;
   margin-top: 15px;
 }

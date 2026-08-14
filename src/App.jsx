@@ -3,7 +3,7 @@ import HeroSection from './components/HeroSection';
 import LoginForm from './components/LoginForm';
 import HomePage from './components/HomePage';
 import './App.css';
-import bgImage from './assets/background.png';
+import bgImage from './assets/kolaxus_background3.jpg';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

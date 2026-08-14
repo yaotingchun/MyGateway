@@ -1,8 +1,8 @@
 .app-container {
   min-height: 100vh;
   position: relative;
-  background-size: cover;
-  background-position: center 25%;
+  background-size: 135%;
+  background-position:63% 5%;
   background-repeat: no-repeat;
   display: flex;
   flex-direction: column;
