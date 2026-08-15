@@ -3,6 +3,14 @@
 export const STARTER_PROMPTS = [
   {
     id: 'p1',
+    title: 'Start a Food & Beverage Business',
+    description: 'Identify step-by-step applications across SSM, Local Council, KKM, JAKIM & LHDN.',
+    category: 'Business & Food',
+    icon: 'briefcase',
+    sampleQuery: 'I want to start a food business. What applications do I need to do and which agencies are involved?',
+  },
+  {
+    id: 'p2',
     title: 'Renew Driving Licence & Road Tax',
     description: 'Check renewal fees, 10-year discount, and instant MyJPJ digital licence steps.',
     category: 'Transport & JPJ',
@@ -10,23 +18,23 @@ export const STARTER_PROMPTS = [
     sampleQuery: 'How can I renew my Malaysian driving licence online?',
   },
   {
-    id: 'p2',
-    title: 'STR Cash Assistance & Payment Status',
+    id: 'p3',
+    title: 'STR Cash Assistance & SARA Aid',
     description: 'Check payment dates, household eligibility tiers, and how to receive aid.',
     category: 'Welfare & Aid',
     icon: 'wallet',
     sampleQuery: 'How do I check my STR cash assistance payment status?',
   },
   {
-    id: 'p3',
+    id: 'p4',
     title: 'Register a New Business (SSM)',
-    description: 'Simple steps to register a sole proprietorship or enterprise online.',
+    description: 'Simple steps to register a sole proprietorship or enterprise on EzBiz.',
     category: 'Business & SSM',
     icon: 'briefcase',
     sampleQuery: 'What are the steps to register a new business with SSM EzBiz?',
   },
   {
-    id: 'p4',
+    id: 'p5',
     title: 'MyKad Replacement & Walk-in',
     description: 'Fix unreadable IC chip at UTC within 45 minutes and fee details.',
     category: 'Identity (JPN)',
@@ -34,20 +42,12 @@ export const STARTER_PROMPTS = [
     sampleQuery: 'My MyKad chip is broken. Where can I get a replacement and what is the fee?',
   },
   {
-    id: 'p5',
+    id: 'p6',
     title: 'Personal Tax Reliefs & e-Filing',
     description: 'Simple list of tax deductions for medical, lifestyle, EPF, and family.',
     category: 'Taxation (LHDN)',
     icon: 'file-text',
     sampleQuery: 'What tax reliefs can I claim for this year in e-Filing?',
-  },
-  {
-    id: 'p6',
-    title: 'Apply for Affordable Housing',
-    description: 'Eligibility criteria and simple document checklist for PR1MA and PPR.',
-    category: 'Housing (PR1MA)',
-    icon: 'home',
-    sampleQuery: 'How do I apply for PR1MA affordable housing scheme?',
   },
 ];
 
@@ -127,7 +127,92 @@ export function generateGovAiResponse(userQuery) {
     };
   }
 
-  // 3. SSM / Business / Company / License
+  // 3. Food Business / Restaurant / Cafe / F&B Setup
+  if (query.includes('food') || query.includes('makanan') || query.includes('restaurant') || query.includes('restoran') || query.includes('cafe') || query.includes('f&b') || (query.includes('start') && query.includes('business'))) {
+    return {
+      agency: 'SSM, Local Council (PBT), KKM, JAKIM, LHDN, KWSP & PERKESO',
+      content: `Starting a **Food & Beverage (F&B) business** in Malaysia requires completing several sequential applications across specific government agencies:
+
+## Step 1: Business Registration (SSM)
+- **Application**: Register Sole Proprietorship (Enterprise) or Sdn Bhd.
+- **Agency**: **Suruhanjaya Syarikat Malaysia (SSM)**
+- **Official Portal**: **[SSM EzBiz](https://ezbiz.ssm.com.my)**
+- **Fee**: RM30/year (Personal Name) or RM60/year (Trade Name).
+- **Timeframe**: Approved within 24 hours.
+
+## Step 2: Food Handler Training & Typhoid Inoculation (KKM)
+- **Application**: 
+  1. Mandatory 3-hour **Food Handler Training (Kursus Latihan Pengendali Makanan - SLPM)**. (~RM50/person)
+  2. Mandatory **Typhoid Vaccination (Suntikan Tifoid TY2)** for all staff. (~RM60-RM100/person, valid for 3 years)
+- **Agency**: **Ministry of Health (KKM) / Food Safety and Quality Division (BKKM)**
+- **Portal**: **[FoSIM KKM](https://fosim.moh.gov.my)**
+
+## Step 3: Business Premise & Signboard License (Local Council / PBT)
+- **Application**: Apply for **Premise License (Lesen Premis)** and **Signboard License (Lesen Papan Iklan)**.
+- **Agency**: Your respective **Local Council / PBT** (e.g. DBKL, MBPJ, MBSA, MBJB, MPKJ, etc.).
+- **Requirements**: Premise tenancy agreement, layout plan, BOMBA fire safety support letter, grease trap installation, DBP Malay language verification.
+
+## Step 4: Halal Certification (JAKIM / JAIN) - Recommended
+- **Application**: Apply for Malaysian Halal Certification.
+- **Agency**: **Department of Islamic Development Malaysia (JAKIM)** / State Religious Dept (JAIN).
+- **Official Portal**: **[MYeHALAL](https://myehalal.halal.gov.my)**
+- **Requirements**: Minimum 2 Muslim food handlers, 100% Halal certified ingredients.
+
+## Step 5: Tax Registration (LHDN)
+- **Application**: Register for Income Tax File & National e-Invoicing.
+- **Agency**: **Lembaga Hasil Dalam Negeri (LHDN)**
+- **Official Portal**: **[MyTax](https://mytax.hasil.gov.my)**
+
+## Step 6: Employer Statutory Contributions (If hiring employees)
+- **Agencies**: **KWSP / EPF** (i-Akaun Majikan) & **PERKESO / SOCSO** (ASSIST Portal).`,
+      actionCards: [
+        {
+          id: 'act-ssm-ezbiz',
+          title: 'SSM EzBiz Portal',
+          subtitle: 'Register your food business online',
+          type: 'link',
+          url: 'https://ezbiz.ssm.com.my',
+          btnText: 'Open EzBiz',
+          icon: 'external',
+        },
+        {
+          id: 'act-fosim',
+          title: 'KKM FoSIM Portal',
+          subtitle: 'Food safety & handler guidelines',
+          type: 'link',
+          url: 'https://fosim.moh.gov.my',
+          btnText: 'Open FoSIM',
+          icon: 'external',
+        },
+        {
+          id: 'act-myehalal',
+          title: 'JAKIM MYeHALAL',
+          subtitle: 'Apply for Halal certification',
+          type: 'link',
+          url: 'https://myehalal.halal.gov.my',
+          btnText: 'Open MYeHALAL',
+          icon: 'external',
+        },
+        {
+          id: 'act-mytax',
+          title: 'LHDN MyTax',
+          subtitle: 'Tax registration for new businesses',
+          type: 'link',
+          url: 'https://mytax.hasil.gov.my',
+          btnText: 'Open MyTax',
+          icon: 'external',
+        },
+      ],
+      suggestions: [
+        'Do home-based food sellers need a PBT premise license?',
+        'How much is the Typhoid vaccine at clinics?',
+        'What are the requirements for JAKIM Halal certification?',
+        'Should I register as Sole Proprietor or Sdn Bhd for a cafe?',
+      ],
+    };
+  }
+
+  // 4. SSM / General Business / Company / License
   if (query.includes('ssm') || query.includes('business') || query.includes('perniagaan') || query.includes('ezbiz') || query.includes('company') || query.includes('sdn bhd')) {
     return {
       agency: 'Companies Commission of Malaysia (SSM)',

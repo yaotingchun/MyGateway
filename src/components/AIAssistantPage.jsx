@@ -18,11 +18,42 @@ import {
   BadgeCheck,
   FileText,
   Home,
-  ChevronRight
+  ChevronRight,
+  CheckCircle2,
+  Layers
 } from 'lucide-react';
+import { marked } from 'marked';
 import Navbar from './Navbar';
-import { STARTER_PROMPTS, generateGovAiResponse } from './govAiData';
+import { STARTER_PROMPTS } from './govAiData';
+import { askGovAi } from '../services/aiService';
 import './AIAssistantPage.css';
+
+// Configure marked with GitHub-flavored markdown and line breaks
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+});
+
+// Custom renderer for opening links safely in a new tab
+const renderer = new marked.Renderer();
+const originalLinkRenderer = renderer.link.bind(renderer);
+renderer.link = (href, title, text) => {
+  let linkHref = typeof href === 'object' ? href.href : href;
+  let linkTitle = typeof href === 'object' ? href.title : title;
+  let linkText = typeof href === 'object' ? href.text : text;
+  return `<a href="${linkHref}" target="_blank" rel="noopener noreferrer" ${linkTitle ? `title="${linkTitle}"` : ''}>${linkText}</a>`;
+};
+marked.use({ renderer });
+
+const renderMarkdown = (content) => {
+  if (!content) return '';
+  try {
+    return marked.parse(content);
+  } catch (err) {
+    console.error('Error rendering markdown:', err);
+    return content;
+  }
+};
 
 const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuery = '' }) => {
   const [messages, setMessages] = useState([]);
@@ -63,10 +94,10 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
     setSpeakingMessageId(null);
   };
 
-  // Send Message Logic
-  const handleSendMessage = (textToSend = null) => {
+  // Send Message Logic with Live Gemini API
+  const handleSendMessage = async (textToSend = null) => {
     const query = (textToSend !== null ? textToSend : inputText).trim();
-    if (!query) return;
+    if (!query || isTyping) return;
 
     const userMsgId = 'usr-' + Date.now();
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -78,13 +109,14 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
       timestamp: nowTime,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const currentHistory = [...messages, userMessage];
+    setMessages(currentHistory);
     setInputText('');
     setIsTyping(true);
 
-    // Simulate AI synthesis & response
-    setTimeout(() => {
-      const responseData = generateGovAiResponse(query);
+    try {
+      // Call live Gemini service with Malaysian government knowledge base
+      const responseData = await askGovAi(query, messages);
       const aiMsgId = 'ai-' + Date.now();
       const aiMessage = {
         id: aiMsgId,
@@ -94,11 +126,29 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
         content: responseData.content,
         actionCards: responseData.actionCards,
         suggestions: responseData.suggestions,
+        checklist: responseData.checklist,
       };
 
       setMessages((prev) => [...prev, aiMessage]);
+    } catch (err) {
+      console.error('Error handling AI response:', err);
+      const errorMsgId = 'ai-err-' + Date.now();
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: errorMsgId,
+          sender: 'ai',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          agency: 'MyGateway AI Helpdesk',
+          content: `We encountered an issue processing your request. Please try again or rephrase your question.`,
+          actionCards: [],
+          suggestions: ['I want to start a food business', 'How to renew driving licence?'],
+          checklist: [],
+        },
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 850);
+    }
   };
 
   // Keyboard Enter handler
@@ -187,7 +237,7 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
                   How can <span className="highlight-brand-text">MyGateway</span> assist you?
                 </h2>
                 <p className="greeting-description">
-                  Simple and fast guidance for Malaysian government services, applications, and public assistance.
+                  Ask about starting a business, government applications, required agencies, license renewals, and public welfare.
                 </p>
               </div>
 
@@ -198,7 +248,7 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
                   <textarea
                     ref={textareaRef}
                     className="prompt-textarea"
-                    placeholder="Ask AI a question or describe what you need help with..."
+                    placeholder="Ask AI a question (e.g. 'How to apply PTPTN')..."
                     rows={2}
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
@@ -211,9 +261,9 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
                   <span className="prompt-hint-text">Press Enter to ask</span>
                   <button
                     id="landing-submit-btn"
-                    className={`prompt-send-btn ${inputText.trim() ? 'btn-active' : ''}`}
+                    className={`prompt-send-btn ${inputText.trim() && !isTyping ? 'btn-active' : ''}`}
                     onClick={() => handleSendMessage()}
-                    disabled={!inputText.trim()}
+                    disabled={!inputText.trim() || isTyping}
                     title="Send Question"
                   >
                     <ArrowUp size={20} />
@@ -251,17 +301,17 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
               <div className="simple-quick-topics">
                 <span className="quick-topics-title">Popular:</span>
                 {[
+                  'I want to start a food business',
                   'Renew Driving Licence',
                   'STR Cash Aid Status',
                   'SSM Business Registration',
                   'Replace Broken MyKad',
-                  'Tax Reliefs 2026',
                   'PR1MA Housing',
                 ].map((topic) => (
                   <button
                     key={topic}
                     className="simple-topic-chip"
-                    onClick={() => handleSendMessage(`How do I apply for ${topic}?`)}
+                    onClick={() => handleSendMessage(topic.startsWith('I want') ? topic : `How do I apply for ${topic}?`)}
                   >
                     {topic}
                   </button>
@@ -297,67 +347,34 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
                     </div>
 
                     <div className="ai-message-container">
-                      {/* Agency Badge */}
-                      <div className="ai-badge-row">
-                        <div className="agency-badge">
-                          <Building size={13} />
-                          <span>{msg.agency || 'Government Public Service'}</span>
-                        </div>
-                        <span className="message-timestamp">{msg.timestamp}</span>
-                      </div>
+                      {/* Clean Structured Message Content rendered via marked */}
+                      <div 
+                        className="ai-bubble-content markdown-body"
+                        dangerouslySetInnerHTML={{
+                          __html: renderMarkdown(msg.content)
+                        }}
+                      />
 
-                      {/* Clean Message Content */}
-                      <div className="ai-bubble-content">
-                        {msg.content.split('\n\n').map((para, pIdx) => {
-                          if (para.startsWith('### ')) {
-                            return <h3 key={pIdx} className="ai-heading-3">{para.replace('### ', '')}</h3>;
-                          }
-                          if (para.startsWith('## ')) {
-                            return <h2 key={pIdx} className="ai-heading-2">{para.replace('## ', '')}</h2>;
-                          }
-
-                          if (para.includes('\n- ') || para.includes('\n1. ')) {
-                            const items = para.split('\n');
-                            return (
-                              <div key={pIdx} className="ai-list-wrap">
-                                {items.map((item, iIdx) => {
-                                  if (item.startsWith('- ') || item.startsWith('1. ') || item.startsWith('2. ') || item.startsWith('3. ') || item.startsWith('4. ') || item.startsWith('5. ')) {
-                                    const cleanItem = item.replace(/^[-*]|\d+\.\s/, '').trim();
-                                    return (
-                                      <div key={iIdx} className="ai-list-item">
-                                        <span className="list-dot">•</span>
-                                        <span dangerouslySetInnerHTML={{
-                                          __html: cleanItem
-                                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
-                                        }} />
-                                      </div>
-                                    );
-                                  }
-                                  return (
-                                    <p key={iIdx} dangerouslySetInnerHTML={{
-                                      __html: item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                    }} />
-                                  );
-                                })}
+                      {/* Checklist Box if available */}
+                      {msg.checklist && msg.checklist.length > 0 && (
+                        <div className="ai-checklist-box">
+                          <div className="ai-checklist-header">
+                            <CheckCircle2 size={16} className="checklist-icon" />
+                            <span>Application Steps Overview</span>
+                          </div>
+                          <div className="ai-checklist-grid">
+                            {msg.checklist.map((step, sIdx) => (
+                              <div key={sIdx} className="checklist-step-item">
+                                <span className="step-number">{step.step || sIdx + 1}</span>
+                                <div className="step-details">
+                                  <span className="step-title">{step.title}</span>
+                                  {step.agency && <span className="step-agency">{step.agency}</span>}
+                                </div>
                               </div>
-                            );
-                          }
-
-                          return (
-                            <p
-                              key={pIdx}
-                              className="ai-paragraph"
-                              dangerouslySetInnerHTML={{
-                                __html: para
-                                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                  .replace(/`([^`]+)`/g, '<code>$1</code>')
-                                  .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
-                              }}
-                            />
-                          );
-                        })}
-                      </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Interactive Action Cards */}
                       {msg.actionCards && msg.actionCards.length > 0 && (
@@ -379,7 +396,7 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
                                   <p className="act-sub">{act.subtitle}</p>
                                 </div>
                               </div>
-                              <span className="act-btn-pill">{act.btnText}</span>
+                              <span className="act-btn-pill">{act.btnText || 'Open Portal'}</span>
                             </a>
                           ))}
                         </div>
@@ -467,6 +484,10 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
                           <RotateCcw size={14} />
                           <span>More details</span>
                         </button>
+
+                        {msg.timestamp && (
+                          <span className="ai-toolbar-timestamp">{msg.timestamp}</span>
+                        )}
                       </div>
                     </div>
                   </div>
