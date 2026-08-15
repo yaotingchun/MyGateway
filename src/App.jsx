@@ -3,17 +3,18 @@ import HeroSection from './components/HeroSection';
 import LoginForm from './components/LoginForm';
 import HomePage from './components/HomePage';
 import ServicesPage from './components/ServicesPage';
+import AIAssistantPage from './components/AIAssistantPage';
 import './App.css';
-import bgImage from './assets/kolaxus_background3.jpg';
+import bgImage from './assets/kolaxus_background3.webp';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn]   = useState(false);
   const [currentUser, setCurrentUser] = useState('');
-  const [currentPage, setCurrentPage] = useState('home');   // 'home' | 'services'
-  const [servicesCategory, setServicesCategory] = useState('All');
+  const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'ai' | 'applications' | 'profile'
+  const [aiInitialQuery, setAiInitialQuery] = useState('');
 
   const handleLogin = (username) => {
-    setCurrentUser(username);
+    setCurrentUser(username || 'Jason');
     setIsLoggedIn(true);
     setCurrentPage('home');
   };
@@ -22,30 +23,41 @@ function App() {
     setIsLoggedIn(false);
     setCurrentUser('');
     setCurrentPage('home');
+    setAiInitialQuery('');
   };
 
-  const navigateTo = (page, opts = {}) => {
-    setCurrentPage(page);
-    if (opts.category) setServicesCategory(opts.category);
+  const handleNavigate = (pageId, query = '') => {
+    if (pageId === 'ai') {
+      setAiInitialQuery(query || '');
+      setCurrentPage('ai');
+    } else {
+      setCurrentPage(pageId);
+    }
+  };
+
+  const handleAskAi = (query) => {
+    setAiInitialQuery(query || '');
+    setCurrentPage('ai');
   };
 
   if (isLoggedIn) {
-    if (currentPage === 'services') {
+    if (currentPage === 'ai') {
       return (
-        <ServicesPage
-          key={servicesCategory}
-          initialCategory={servicesCategory}
-          onNavigate={navigateTo}
-          username={currentUser}
+        <AIAssistantPage
+          username={currentUser || 'Jason'}
           onLogout={handleLogout}
+          onNavigate={handleNavigate}
+          initialQuery={aiInitialQuery}
         />
       );
     }
+
     return (
       <HomePage
-        username={currentUser}
+        username={currentUser || 'Jason'}
         onLogout={handleLogout}
-        onNavigate={navigateTo}
+        onNavigate={handleNavigate}
+        onAskAi={handleAskAi}
       />
     );
   }

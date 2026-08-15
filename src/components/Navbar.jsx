@@ -15,24 +15,30 @@ const NAV_LINKS = [
   { id: 'profile', label: 'Profile' },
 ];
 
-const Navbar = ({ username, onLogout, onNavigate, activePage: activePageProp = 'home' }) => {
-  const [activePage, setActivePage] = useState(activePageProp);
+const Navbar = ({ username, onLogout, activePage = 'home', onNavigate }) => {
   const [lang, setLang] = useState('EN');
   const [langOpen, setLangOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifCount] = useState(2);
 
-  const handleNavClick = (id) => {
-    setActivePage(id);
-    if (id === 'applications' && onNavigate) onNavigate('services');
-    if (id === 'home' && onNavigate) onNavigate('home');
+  const handleNavClick = (pageId) => {
+    if (onNavigate) {
+      onNavigate(pageId);
+    }
   };
 
   return (
     <nav className="nb-root">
       <div className="nb-inner">
         {/* Logo */}
-        <a href="#" className="nb-logo">
+        <a
+          href="#"
+          className="nb-logo"
+          onClick={(e) => {
+            e.preventDefault();
+            handleNavClick('home');
+          }}
+        >
           <img src={logo} alt="MyGateway" className="nb-logo-img" />
         </a>
 
