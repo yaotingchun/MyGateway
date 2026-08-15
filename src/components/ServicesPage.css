@@ -1,0 +1,607 @@
+/* ── ServicesPage.css ──────────────────────────────────────────────────────── */
+
+.sp-root {
+  min-height: 100vh;
+  background: #f7f9fc;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+.sp-main {
+  flex: 1;
+  max-width: 1300px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 36px 32px 60px;
+  box-sizing: border-box;
+}
+
+/* ── Header ── */
+.sp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.sp-title {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #1a202c;
+  margin: 0 0 6px;
+}
+
+.sp-subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ── Search ── */
+.sp-search-wrap {
+  position: relative;
+  flex: 0 0 340px;
+  max-width: 100%;
+}
+
+.sp-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.sp-search {
+  width: 100%;
+  padding: 12px 40px 12px 44px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.93rem;
+  background: #fff;
+  color: #1a202c;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.sp-search:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.sp-search-clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: color 0.2s, background 0.2s;
+}
+
+.sp-search-clear:hover {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+/* ── Filter Controls ── */
+.sp-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.sp-filter-group {
+  position: relative;
+  display: inline-flex;
+}
+
+.sp-filter-select {
+  appearance: none;
+  background-color: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 36px 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.sp-filter-select:hover {
+  border-color: #cbd5e1;
+}
+
+.sp-filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.sp-filter-btn {
+  background-color: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sp-filter-btn:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.sp-filter-btn:active {
+  background-color: #f1f5f9;
+}
+
+/* ── Results count ── */
+.sp-count {
+  font-size: 0.87rem;
+  color: #94a3b8;
+  margin: 0 0 20px;
+}
+
+/* ── Loading / Error / Empty ── */
+.sp-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 80px 0;
+  color: #64748b;
+}
+
+.sp-spinner {
+  animation: sp-spin 1s linear infinite;
+  color: #3b82f6;
+}
+
+@keyframes sp-spin {
+  to { transform: rotate(360deg); }
+}
+
+.sp-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 0.93rem;
+}
+
+.sp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 80px 0;
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.sp-empty span {
+  font-size: 3rem;
+}
+
+/* ── Grid ── */
+.sp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* 3D Flip Card Container */
+.sp-card-container {
+  perspective: 1000px;
+  width: 100%;
+  height: 100%; /* let it fill the grid cell */
+}
+
+.sp-card-inner {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.sp-card-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+/* Front and Back common styles */
+.sp-card-front, .sp-card-back {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden; /* Safari */
+  background: white;
+  border-radius: 16px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e8edf3;
+  box-sizing: border-box;
+}
+
+/* ── Front Specific ── */
+.sp-card-front {
+  gap: 10px;
+  transition: box-shadow 0.2s;
+}
+
+.sp-card-container:hover .sp-card-front {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+}
+
+.sp-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sp-card-icon {
+  font-size: 1.5rem;
+}
+
+.sp-card-cat-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #3b82f6;
+  letter-spacing: 0.02em;
+}
+
+.sp-card-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.sp-card-agency {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6366f1;
+  margin: 0;
+}
+
+.sp-card-desc {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.6;
+  flex: 1;
+}
+
+.sp-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.sp-card-front-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.sp-card-expand-btn {
+  background: #eff6ff;
+  color: #2563eb;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sp-card-expand-btn:hover {
+  background: #dbeafe;
+}
+
+.sp-card-expand-placeholder {
+  flex: 1;
+}
+
+.sp-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  white-space: nowrap;
+}
+
+.sp-card-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+/* ── Back Specific ── */
+.sp-card-back {
+  background: #f0f7ff;
+  transform: rotateY(180deg);
+  border: 1px solid #bfdbfe;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sp-card-back-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #dbeafe;
+}
+
+.sp-card-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: #3b82f6;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: -4px;
+}
+
+.sp-card-back-btn:hover {
+  color: #1d4ed8;
+}
+
+.sp-card-back-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sp-card-back-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-right: 4px;
+}
+
+.sp-card-back-content::-webkit-scrollbar {
+  width: 4px;
+}
+.sp-card-back-content::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.02);
+}
+.sp-card-back-content::-webkit-scrollbar-thumb {
+  background: #bfdbfe;
+  border-radius: 4px;
+}
+
+.sp-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sp-detail-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #2563eb;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sp-detail-text {
+  font-size: 0.85rem;
+  color: #334155;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.sp-detail-text p {
+  margin: 0 0 6px 0;
+}
+.sp-detail-text p:last-child {
+  margin-bottom: 0;
+}
+
+.sp-inline-link {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 500;
+  transition: color 0.2s, text-decoration-color 0.2s;
+}
+
+.sp-inline-link:hover {
+  color: #1d4ed8;
+  text-decoration-color: #1d4ed8;
+}
+
+.sp-card-back-footer {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #dbeafe;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sp-card-btn-full {
+  width: 100%;
+  justify-content: center;
+}
+
+.sp-contact-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.sp-contact-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  color: #3b82f6;
+  border: 1px solid #bfdbfe;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.sp-contact-btn:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+/* Circle icons for Phone and Email */
+.sp-contact-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* Pill buttons for Links/Websites */
+.sp-contact-pill {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.sp-contact-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.sp-contact-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  color: #3b82f6;
+  border: 1px solid #bfdbfe;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.sp-contact-btn:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+/* Circle icons for Phone and Email */
+.sp-contact-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* Pill buttons for Links/Websites */
+.sp-contact-pill {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  gap: 6px;
+  white-space: nowrap;
+}.sp-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 36px;
+}
+
+.sp-load-more {
+  padding: 13px 32px;
+  border-radius: 12px;
+  border: 2px solid #3b82f6;
+  background: #fff;
+  color: #3b82f6;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.sp-load-more:hover {
+  background: #3b82f6;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .sp-header {
+    flex-direction: column;
+  }
+  .sp-search-wrap {
+    flex: none;
+    width: 100%;
+  }
+  .sp-grid {
+    grid-template-columns: 1fr;
+  }
+  .sp-title {
+    font-size: 1.4rem;
+  }
+}

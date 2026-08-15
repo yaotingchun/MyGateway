@@ -15,12 +15,18 @@ const NAV_LINKS = [
   { id: 'profile', label: 'Profile' },
 ];
 
-const Navbar = ({ username, onLogout }) => {
-  const [activePage, setActivePage] = useState('home');
+const Navbar = ({ username, onLogout, onNavigate, activePage: activePageProp = 'home' }) => {
+  const [activePage, setActivePage] = useState(activePageProp);
   const [lang, setLang] = useState('EN');
   const [langOpen, setLangOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifCount] = useState(2);
+
+  const handleNavClick = (id) => {
+    setActivePage(id);
+    if (id === 'applications' && onNavigate) onNavigate('services');
+    if (id === 'home' && onNavigate) onNavigate('home');
+  };
 
   return (
     <nav className="nb-root">
@@ -37,7 +43,7 @@ const Navbar = ({ username, onLogout }) => {
               <button
                 id={`nav-${link.id}`}
                 className={`nb-link ${activePage === link.id ? 'nb-link-active' : ''}`}
-                onClick={() => setActivePage(link.id)}
+                onClick={() => handleNavClick(link.id)}
               >
                 {link.label}
               </button>
