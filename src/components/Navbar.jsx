@@ -11,12 +11,12 @@ const LANGS = [
 const NAV_LINKS = [
   { id: 'home', label: 'Home' },
   { id: 'ai', label: 'AI Assistant' },
+  { id: 'voice', label: 'Voice Assistant' },
   { id: 'applications', label: 'Applications' },
   { id: 'profile', label: 'Profile' },
 ];
 
-const Navbar = ({ username, onLogout }) => {
-  const [activePage, setActivePage] = useState('home');
+const Navbar = ({ username, onLogout, activePage = 'home', onChangePage }) => {
   const [lang, setLang] = useState('EN');
   const [langOpen, setLangOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -37,7 +37,7 @@ const Navbar = ({ username, onLogout }) => {
               <button
                 id={`nav-${link.id}`}
                 className={`nb-link ${activePage === link.id ? 'nb-link-active' : ''}`}
-                onClick={() => setActivePage(link.id)}
+                onClick={() => onChangePage && onChangePage(link.id)}
               >
                 {link.label}
               </button>

@@ -109,7 +109,7 @@ function StatusBadge({ status }) {
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
-const HomePage = ({ username, onLogout }) => {
+const HomePage = ({ username, onLogout, onChangePage }) => {
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const hour = new Date().getHours();
@@ -119,7 +119,7 @@ const HomePage = ({ username, onLogout }) => {
 
   return (
     <div className="hp-root">
-      <Navbar username={username} onLogout={onLogout} />
+      <Navbar username={username} onLogout={onLogout} activePage="home" onChangePage={onChangePage} />
 
       <main className="hp-main">
 

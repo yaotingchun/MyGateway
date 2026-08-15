@@ -1,0 +1,617 @@
+/* ── Layout & Page ───────────────────────────────────────────────────────── */
+
+.va-root {
+  min-height: 100vh;
+  background: #f7f9fc;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', sans-serif;
+  color: #1a2a40;
+}
+
+.va-main {
+  flex: 1;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.va-back-btn {
+  background: transparent;
+  border: none;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+.va-back-btn:hover {
+  color: #1a56db;
+  background: rgba(26, 86, 219, 0.06);
+}
+
+/* ── AI Voice Card (Light Premium Panel) ─────────────────────────────────── */
+
+.va-glass-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 28px;
+  padding: 40px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05), 0 0 2px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.va-glass-card::before {
+  content: '';
+  position: absolute;
+  top: -150px;
+  right: -150px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(26, 86, 219, 0.05) 0%, transparent 70%);
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+/* Header branding */
+.va-card-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.va-sparkle-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e8f0fe;
+  border: 1px solid rgba(26, 86, 219, 0.2);
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1a56db;
+  letter-spacing: 0.2px;
+  margin-bottom: 16px;
+}
+
+.va-sparkle-icon {
+  animation: floatSparkle 2s ease-in-out infinite;
+}
+
+@keyframes floatSparkle {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.1); }
+}
+
+.va-card-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  color: #1a2a40;
+  margin: 0 0 10px;
+}
+
+.va-card-sub {
+  font-size: 1rem;
+  color: #6b7280;
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* ── Core Interaction Area ──────────────────────────────────────────────── */
+
+.va-core-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  width: 100%;
+}
+
+.va-visualizer-box-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Pulsing Mic Visualizer Rings */
+.va-visualizer-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 180px;
+  height: 180px;
+}
+
+.va-outer-ring {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: rgba(26, 86, 219, 0.02);
+  border: 1px solid rgba(26, 86, 219, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.va-inner-ring {
+  width: 105px;
+  height: 105px;
+  border-radius: 50%;
+  background: rgba(26, 86, 219, 0.04);
+  border: 1px solid rgba(26, 86, 219, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.va-mic-trigger {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a56db, #2563eb);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(26, 86, 219, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 5;
+}
+
+.va-mic-trigger:hover {
+  transform: scale(1.06);
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  box-shadow: 0 12px 25px rgba(26, 86, 219, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+}
+
+/* Active Recording visual effects */
+.va-visualizer-box.active .va-outer-ring {
+  background: rgba(239, 68, 68, 0.03);
+  border-color: rgba(239, 68, 68, 0.15);
+  transform: scale(1.15);
+  animation: pulseOuter 2s infinite ease-in-out;
+}
+
+.va-visualizer-box.active .va-inner-ring {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.25);
+  transform: scale(1.08);
+  animation: pulseInner 2s infinite ease-in-out;
+}
+
+.va-visualizer-box.active .va-mic-trigger {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  animation: heartbeat 1.5s infinite;
+}
+
+/* Active Speaking visual effects */
+.va-visualizer-box.speaking .va-outer-ring {
+  border-color: rgba(26, 86, 219, 0.15);
+  transform: scale(1.1);
+  animation: pulseOuterBlue 2.5s infinite ease-in-out;
+}
+
+.va-visualizer-box.speaking .va-inner-ring {
+  border-color: rgba(26, 86, 219, 0.25);
+  animation: pulseInnerBlue 2.5s infinite ease-in-out;
+}
+
+.va-visualizer-box.speaking .va-mic-trigger {
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  box-shadow: 0 0 25px rgba(14, 165, 233, 0.25);
+}
+
+@keyframes pulseOuter {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.05); }
+  50% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0.08); }
+}
+
+@keyframes pulseInner {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.1); }
+  50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0.15); }
+}
+
+@keyframes pulseOuterBlue {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 86, 219, 0.05); }
+  50% { box-shadow: 0 0 0 16px rgba(26, 86, 219, 0.08); }
+}
+
+@keyframes pulseInnerBlue {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 86, 219, 0.08); }
+  50% { box-shadow: 0 0 0 8px rgba(26, 86, 219, 0.12); }
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Animated Audio Waveform */
+.va-waveform {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 30px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+.va-visualizer-box.active .va-waveform,
+.va-visualizer-box.speaking .va-waveform {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.va-waveform .bar {
+  width: 4px;
+  background-color: #ef4444;
+  border-radius: 4px;
+  height: 4px;
+  transition: height 0.1s ease;
+}
+
+.va-visualizer-box.speaking .va-waveform .bar {
+  background-color: #1a56db;
+}
+
+/* Waveform bar animations */
+.va-visualizer-box.active .va-waveform .bar:nth-child(1) { animation: wave 1.2s infinite 0.1s ease-in-out; }
+.va-visualizer-box.active .va-waveform .bar:nth-child(2) { animation: wave 1.2s infinite 0.3s ease-in-out; }
+.va-visualizer-box.active .va-waveform .bar:nth-child(3) { animation: wave 1.2s infinite 0.5s ease-in-out; }
+.va-visualizer-box.active .va-waveform .bar:nth-child(4) { animation: wave 1.2s infinite 0.2s ease-in-out; }
+.va-visualizer-box.active .va-waveform .bar:nth-child(5) { animation: wave 1.2s infinite 0.4s ease-in-out; }
+.va-visualizer-box.active .va-waveform .bar:nth-child(6) { animation: wave 1.2s infinite 0.6s ease-in-out; }
+.va-visualizer-box.active .va-waveform .bar:nth-child(7) { animation: wave 1.2s infinite 0.1s ease-in-out; }
+.va-visualizer-box.active .va-waveform .bar:nth-child(8) { animation: wave 1.2s infinite 0.3s ease-in-out; }
+.va-visualizer-box.active .va-waveform .bar:nth-child(9) { animation: wave 1.2s infinite 0.5s ease-in-out; }
+
+.va-visualizer-box.speaking .va-waveform .bar:nth-child(1) { animation: waveSpeak 1.6s infinite 0.1s ease-in-out; }
+.va-visualizer-box.speaking .va-waveform .bar:nth-child(2) { animation: waveSpeak 1.6s infinite 0.4s ease-in-out; }
+.va-visualizer-box.speaking .va-waveform .bar:nth-child(3) { animation: waveSpeak 1.6s infinite 0.2s ease-in-out; }
+.va-visualizer-box.speaking .va-waveform .bar:nth-child(4) { animation: waveSpeak 1.6s infinite 0.5s ease-in-out; }
+.va-visualizer-box.speaking .va-waveform .bar:nth-child(5) { animation: waveSpeak 1.6s infinite 0.3s ease-in-out; }
+.va-visualizer-box.speaking .va-waveform .bar:nth-child(6) { animation: waveSpeak 1.6s infinite 0.6s ease-in-out; }
+.va-visualizer-box.speaking .va-waveform .bar:nth-child(7) { animation: waveSpeak 1.6s infinite 0.1s ease-in-out; }
+.va-visualizer-box.speaking .va-waveform .bar:nth-child(8) { animation: waveSpeak 1.6s infinite 0.4s ease-in-out; }
+.va-visualizer-box.speaking .va-waveform .bar:nth-child(9) { animation: waveSpeak 1.6s infinite 0.2s ease-in-out; }
+
+@keyframes wave {
+  0%, 100% { height: 4px; }
+  50% { height: 26px; }
+}
+
+@keyframes waveSpeak {
+  0%, 100% { height: 4px; }
+  50% { height: 18px; }
+}
+
+/* Status Indicator */
+.va-status-text {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.va-pulse-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.va-pulse-dot.red { color: #dc2626; }
+.va-pulse-dot.yellow { color: #d97706; }
+.va-pulse-dot.green { color: #059669; }
+.va-pulse-dot.blue { color: #2563eb; }
+
+/* Playground Text Box Panel */
+.va-transcript-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.va-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.va-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: 0.5px;
+}
+
+.va-action-icon-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.va-action-icon-btn.red {
+  color: #ef4444;
+}
+
+.va-action-icon-btn.red:hover {
+  background: #fef2f2;
+}
+
+.va-playground-input-wrap {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 16px;
+  background: #f9fafb;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  transition: all 0.2s ease;
+}
+
+.va-playground-input-wrap:focus-within {
+  border-color: #1a56db;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(26, 86, 219, 0.1), inset 0 2px 4px rgba(0,0,0,0.01);
+}
+
+.va-playground-textarea {
+  width: 100%;
+  min-height: 140px;
+  border: none;
+  background: transparent;
+  outline: none;
+  resize: vertical;
+  padding: 20px;
+  color: #1a2a40;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.va-playground-textarea::placeholder {
+  color: #9ca3af;
+}
+
+/* Playback Control Actions */
+.va-control-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.va-play-trigger-btn {
+  background: #1a56db;
+  border: 1px solid rgba(26, 86, 219, 0.2);
+  border-radius: 12px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(26, 86, 219, 0.15);
+}
+
+.va-play-trigger-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.va-play-trigger-btn:disabled {
+  background: #e5e7eb;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.va-play-trigger-btn.active {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: white;
+  animation: btnPulseRed 1.5s infinite;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+@keyframes btnPulseRed {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0.15); }
+}
+
+/* Presets Panel */
+.va-presets-container {
+  width: 100%;
+  margin-top: 10px;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.va-presets-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.va-preset-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.va-preset-row:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.va-preset-text-btn {
+  flex: 1;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  color: #4b5563;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  line-height: 1.4;
+}
+
+.va-preset-text-btn:hover {
+  color: #1a2a40;
+}
+
+.va-preset-speak-btn {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid #e5e7eb;
+  transition: all 0.15s ease;
+}
+
+.va-preset-speak-btn:hover {
+  background: #e8f0fe;
+  color: #1a56db;
+}
+
+.va-preset-speak-btn.active {
+  background: #fef2f2;
+  color: #dc2626;
+  animation: iconPulse 1.5s infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+
+.va-footer {
+  padding: 24px 20px;
+  text-align: center;
+  border-top: 1px solid #e5e7eb;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+/* ── Animations ────────────────────────────────────────────────────────── */
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Language Selector ─────────────────────────────────────────────────── */
+
+.va-language-selector-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 500px;
+  animation: slideUp 0.4s ease;
+}
+
+.va-language-selector {
+  display: flex;
+  background: rgba(243, 244, 246, 0.8);
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  padding: 4px;
+  border-radius: 16px;
+  width: 100%;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.va-lang-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.va-lang-btn:hover {
+  color: #111827;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.va-lang-btn.active {
+  background: white;
+  color: #1a56db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.va-flag {
+  font-size: 1.1rem;
+}
