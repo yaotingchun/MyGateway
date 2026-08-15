@@ -109,17 +109,38 @@ function StatusBadge({ status }) {
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
-const HomePage = ({ username, onLogout }) => {
+const HomePage = ({ username, onLogout, onNavigate, onAskAi }) => {
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-  const handlePromptClick = (p) => setQuery(p);
+  const handlePromptClick = (p) => {
+    setQuery(p);
+    if (onAskAi) {
+      onAskAi(p);
+    } else if (onNavigate) {
+      onNavigate('ai', p);
+    }
+  };
+
+  const handleAskSubmit = (e) => {
+    e.preventDefault();
+    if (onAskAi) {
+      onAskAi(query);
+    } else if (onNavigate) {
+      onNavigate('ai', query);
+    }
+  };
 
   return (
     <div className="hp-root">
-      <Navbar username={username} onLogout={onLogout} />
+      <Navbar
+        username={username}
+        onLogout={onLogout}
+        activePage="home"
+        onNavigate={onNavigate}
+      />
 
       <main className="hp-main">
 
@@ -141,7 +162,7 @@ const HomePage = ({ username, onLogout }) => {
               <h2 className="hp-ai-heading">What do you need help with?</h2>
               <p className="hp-ai-sub">Tell us what you need, and we'll guide you through the government process.</p>
 
-              <div className="hp-ai-search-wrap">
+              <form className="hp-ai-search-wrap" onSubmit={handleAskSubmit}>
                 <span className="hp-search-icon">🔍</span>
                 <input
                   id="ai-search-input"
@@ -151,8 +172,8 @@ const HomePage = ({ username, onLogout }) => {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
-                <button id="ai-search-btn" className="hp-ai-search-btn">Ask AI</button>
-              </div>
+                <button type="submit" id="ai-search-btn" className="hp-ai-search-btn">Ask AI</button>
+              </form>
 
               <div className="hp-ai-examples">
                 <span className="hp-examples-label">Try:</span>
@@ -168,7 +189,7 @@ const HomePage = ({ username, onLogout }) => {
               </div>
             </div>
 
-            <div className="hp-ai-robot">
+            <div className="hp-ai-robot" onClick={() => onNavigate && onNavigate('ai')} style={{ cursor: 'pointer' }} title="Open AI Assistant">
               <img src={robotImg} className="hp-robot-img" alt="AI Assistant Robot" />
               <div className="hp-robot-glow"></div>
             </div>
