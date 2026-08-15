@@ -93,8 +93,7 @@ CRITICAL INSTRUCTIONS:
    - Step 4: Halal Certification with JAKIM / JAIN (MYeHALAL portal) - if applicable
    - Step 5: Tax Registration & e-Invoicing with LHDN (e-Daftar / MyTax)
    - Step 6: Employer Statutory Contributions (KWSP/EPF, PERKESO/SOCSO, EIS/SIP) - if hiring employees
-3. For other inquiries (Licence renewal, STR cash assistance, PR1MA housing, Passport, MyKad, Tax reliefs, etc.):
-   - Detail the primary agency, step-by-step procedure, required documents, official portal link, fees, and processing times.
+3. ELIGIBILITY CHECK: Always evaluate and extract the official Malaysian government eligibility requirements for the application into an "eligibility" object so the citizen can check if they qualify.
 4. Structure the content cleanly in Markdown with clear section headings (## and ###), numbered steps (1., 2., 3.), bold text for key terms and fees, and bullet points.
 5. Provide official, verified Malaysian government portal URLs in the actionCards array.
 6. Always return a valid JSON object matching this schema:
@@ -102,6 +101,30 @@ CRITICAL INSTRUCTIONS:
 {
   "agency": "Exact agency name or comma-separated list of agencies involved (e.g. 'SSM, Local Council (PBT), KKM, JAKIM, LHDN, KWSP & PERKESO')",
   "content": "Comprehensive markdown formatted response with steps, agency breakdowns, fees, and requirements",
+  "eligibility": {
+    "title": "Eligibility Criteria for [Application Name]",
+    "summary": "Quick summary of who is eligible",
+    "criteria": [
+      {
+        "id": "c1",
+        "label": "Citizenship",
+        "requirement": "Malaysian Citizen with valid MyKad",
+        "isMandatory": true
+      },
+      {
+        "id": "c2",
+        "label": "Age Requirement",
+        "requirement": "Aged 18 years and above (or specified age limit)",
+        "isMandatory": true
+      },
+      {
+        "id": "c3",
+        "label": "Document / Qualification",
+        "requirement": "Specific prerequisite document, income tier, or accreditation",
+        "isMandatory": true
+      }
+    ]
+  },
   "actionCards": [
     {
       "id": "act-1",
@@ -142,6 +165,7 @@ function parseGeminiResponse(rawText) {
       actionCards: [],
       suggestions: [],
       checklist: [],
+      eligibility: null,
     };
   }
 
@@ -159,6 +183,7 @@ function parseGeminiResponse(rawText) {
     return {
       agency: parsed.agency || 'Malaysian Government Public Service',
       content: parsed.content || cleaned,
+      eligibility: parsed.eligibility && typeof parsed.eligibility === 'object' ? parsed.eligibility : null,
       actionCards: Array.isArray(parsed.actionCards) ? parsed.actionCards : [],
       suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
       checklist: Array.isArray(parsed.checklist) ? parsed.checklist : [],
@@ -167,6 +192,7 @@ function parseGeminiResponse(rawText) {
     // 2. Fallback regex extraction if JSON was slightly truncated or had unescaped characters
     let agency = 'Malaysian Government Public Service';
     let content = '';
+    let eligibility = null;
     const actionCards = [];
     const suggestions = [];
 
@@ -174,6 +200,14 @@ function parseGeminiResponse(rawText) {
     const agencyMatch = cleaned.match(/"agency"\s*:\s*"([^"]+)"/);
     if (agencyMatch) {
       agency = agencyMatch[1];
+    }
+
+    // Extract eligibility if present
+    const eligibilityMatch = cleaned.match(/"eligibility"\s*:\s*(\{[\s\S]*?\})\s*,\s*"(?:actionCards|suggestions|checklist|content)/);
+    if (eligibilityMatch) {
+      try {
+        eligibility = JSON.parse(eligibilityMatch[1]);
+      } catch (_) {}
     }
 
     // Extract content
@@ -224,6 +258,7 @@ function parseGeminiResponse(rawText) {
         'How to apply for Halal certification?',
       ],
       checklist: [],
+      eligibility,
     };
   }
 }

@@ -20,7 +20,10 @@ import {
   Home,
   ChevronRight,
   CheckCircle2,
-  Layers
+  Layers,
+  ShieldCheck,
+  UserCheck,
+  CheckSquare
 } from 'lucide-react';
 import { marked } from 'marked';
 import Navbar from './Navbar';
@@ -62,9 +65,19 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
   const [copiedMessageId, setCopiedMessageId] = useState(null);
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
   const [feedbackGiven, setFeedbackGiven] = useState({});
+  const [checkedCriteria, setCheckedCriteria] = useState({});
 
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+
+  // Toggle interactive criteria checkbox
+  const handleToggleCriterion = (msgId, criterionId) => {
+    const key = `${msgId}-${criterionId}`;
+    setCheckedCriteria((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
 
   // Time-based greeting
   const hour = new Date().getHours();
@@ -124,6 +137,7 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         agency: responseData.agency,
         content: responseData.content,
+        eligibility: responseData.eligibility,
         actionCards: responseData.actionCards,
         suggestions: responseData.suggestions,
         checklist: responseData.checklist,
@@ -142,8 +156,9 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
           agency: 'MyGateway AI Helpdesk',
           content: `We encountered an issue processing your request. Please try again or rephrase your question.`,
           actionCards: [],
-          suggestions: ['I want to start a food business', 'How to renew driving licence?'],
+          suggestions: ['I want to start a food business', 'How to apply PTPTN loan?'],
           checklist: [],
+          eligibility: null,
         },
       ]);
     } finally {
@@ -354,6 +369,84 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
                           __html: renderMarkdown(msg.content)
                         }}
                       />
+
+                      {/* Interactive Eligibility Check Card if present */}
+                      {msg.eligibility && msg.eligibility.criteria && msg.eligibility.criteria.length > 0 && (
+                        <div className="ai-eligibility-card">
+                          <div className="eligibility-card-header">
+                            <div className="eligibility-title-wrap">
+                              <div className="eligibility-icon-badge">
+                                <ShieldCheck size={18} />
+                              </div>
+                              <div>
+                                <h4 className="eligibility-title">
+                                  {msg.eligibility.title || 'Eligibility & Qualification Check'}
+                                </h4>
+                                {msg.eligibility.summary && (
+                                  <p className="eligibility-summary">{msg.eligibility.summary}</p>
+                                )}
+                              </div>
+                            </div>
+                            <span className="eligibility-badge-pill">
+                              <UserCheck size={13} />
+                              <span>Pre-Check</span>
+                            </span>
+                          </div>
+
+                          <div className="eligibility-criteria-list">
+                            {msg.eligibility.criteria.map((c, cIdx) => {
+                              const cId = c.id || `c-${cIdx}`;
+                              const isChecked = !!checkedCriteria[`${msg.id}-${cId}`];
+                              return (
+                                <div
+                                  key={cId}
+                                  className={`eligibility-criterion-item ${isChecked ? 'item-checked' : ''}`}
+                                  onClick={() => handleToggleCriterion(msg.id, cId)}
+                                >
+                                  <div className="criterion-checkbox">
+                                    {isChecked ? (
+                                      <CheckCircle2 size={18} className="check-icon-active" />
+                                    ) : (
+                                      <div className="check-box-empty" />
+                                    )}
+                                  </div>
+                                  <div className="criterion-body">
+                                    <span className="criterion-label">{c.label}:</span>{' '}
+                                    <span className="criterion-req">{c.requirement}</span>
+                                  </div>
+                                  {c.isMandatory && (
+                                    <span className="criterion-tag-mandatory">Required</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Live Status Calculation */}
+                          {(() => {
+                            const total = msg.eligibility.criteria.length;
+                            const checkedCount = msg.eligibility.criteria.filter((c, i) => checkedCriteria[`${msg.id}-${c.id || `c-${i}`}`]).length;
+                            const allDone = checkedCount === total && total > 0;
+                            return (
+                              <div className={`eligibility-status-footer ${allDone ? 'status-all-pass' : ''}`}>
+                                <div className="status-progress-info">
+                                  <span className="status-count-text">
+                                    {allDone
+                                      ? '🎉 Excellent! You meet all listed eligibility requirements for this application.'
+                                      : `${checkedCount} of ${total} criteria confirmed. Click to check off items you meet.`}
+                                  </span>
+                                </div>
+                                <div className="eligibility-progress-bar">
+                                  <div
+                                    className="eligibility-progress-fill"
+                                    style={{ width: `${(checkedCount / total) * 100}%` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
 
                       {/* Checklist Box if available */}
                       {msg.checklist && msg.checklist.length > 0 && (

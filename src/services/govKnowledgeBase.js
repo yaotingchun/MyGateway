@@ -174,13 +174,34 @@ To start a food business in Malaysia (restaurant, cafe, food truck, catering, or
 
 ---
 
-## 7. HEALTHCARE & EDUCATION
+## 7. HEALTHCARE & HIGHER EDUCATION (PTPTN)
 
-- **Healthcare (KKM)**:
-  - MySejahtera App: National health records, digital clinic appointment booking (Janji Temu), organ donation pledge.
-  - PeKa B40 (https://pekab40.com.my): Free health screening, medical equipment aid up to RM20,000 for B40 recipients.
-  - Skim Perubatan MADANI: Free acute outpatient treatment at participating private general practitioner (GP) clinics for STR recipients.
-- **Higher Education & Student Loans**:
-  - PTPTN (Perbadanan Tabung Pendidikan Tinggi Nasional): https://www.ptptn.gov.my - Higher education study loans, Simpan SSPN Prime & SSPN Plus.
-  - UPUOnline (https://upu.mohe.gov.my): Centralized admission portal for Public Universities (IPTA), Politeknik, Kolej Komuniti, and ILKA.
+### A. Higher Education Loan (PTPTN) & Savings
+- **Agency**: Perbadanan Tabung Pendidikan Tinggi Nasional (PTPTN)
+- **Portal**: MyPTPTN Portal (https://myp.ptptn.gov.my)
+- **Key Eligibility Requirements**:
+  1. **Citizenship**: Malaysian citizen with valid MyKad.
+  2. **Age Limit**: Aged 45 years and below on the date of application.
+  3. **Admission Offer**: Received official offer letter for full-time/part-time Diploma, Degree, Master, or PhD from an accredited IPTA, IPTS, or Politeknik.
+  4. **Accreditation**: Course must be registered and approved by the Ministry of Higher Education (KPT) and accredited by MQA (Malaysian Qualifications Agency).
+  5. **Remaining Duration**: Remaining course duration at the time of application must not be less than 1 year.
+  6. **Active SSPN Account**: Must have an active Simpan SSPN (SSPN Prime / SSPN Plus) account registered under applicant's MyKad (minimum deposit RM20).
+  7. **No Overlapping Sponsorship**: Must not receive any other financial sponsorships, scholarships, or loans for the same course.
+  8. **Panel Bank Account**: Must have a valid individual savings account with designated panel banks (e.g. Bank Islam, Maybank, CIMB, Bank Rakyat, RHB).
+- **Loan Amounts**:
+  - Maximum Tier: For students or parents listed as STR / e-Kasih cash aid recipients (100% maximum loan).
+  - Medium Tier: For households in M40 income bracket (75% loan).
+  - Minimum Tier: For households in T20 income bracket (50% loan).
+- **Loan Exemption**: First-class degree graduates (Ijazah Sarjana Muda Kelas Pertama) from accredited IPTs can apply for 100% PTPTN loan repayment exemption (convert loan to scholarship).
+
+### B. Healthcare & Subsidized Schemes (KKM)
+- **Agency**: Kementerian Kesihatan Malaysia (KKM)
+- **Portal**: MySejahtera App / PeKa B40 (https://pekab40.com.my)
+- **PeKa B40 Eligibility**:
+  - Malaysian citizen, aged 40 and above.
+  - Recipient of Sumbangan Tunai Rahmah (STR) and their registered spouse.
+  - Automatically qualified without registration; walk in with MyKad to participating private or government PeKa B40 clinics.
+- **Skim Perubatan MADANI Eligibility**:
+  - Active recipients of Sumbangan Tunai Rahmah (STR) in household / senior / single categories.
+  - Free outpatient treatment at registered panel GP clinics.
 `;

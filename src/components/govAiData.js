@@ -43,6 +43,14 @@ export const STARTER_PROMPTS = [
   },
   {
     id: 'p6',
+    title: 'PTPTN Higher Education Loan',
+    description: 'Check loan eligibility tiers, accredited IPT courses, and SSPN requirements.',
+    category: 'Education & Loan',
+    icon: 'file-text',
+    sampleQuery: 'How to apply PTPTN loan and what are the eligibility requirements?',
+  },
+  {
+    id: 'p7',
     title: 'Personal Tax Reliefs & e-Filing',
     description: 'Simple list of tax deductions for medical, lifestyle, EPF, and family.',
     category: 'Taxation (LHDN)',
@@ -322,7 +330,59 @@ Log in to **MyTax (mytax.hasil.gov.my)** using your IC number. If your PCB deduc
     };
   }
 
-  // 6. Housing / PR1MA / PPR / Property
+  // 6. PTPTN Higher Education Loan & Application
+  if (query.includes('ptptn') || query.includes('student loan') || query.includes('pinjaman pelajaran') || query.includes('sspn') || query.includes('study loan')) {
+    return {
+      agency: 'Perbadanan Tabung Pendidikan Tinggi Nasional (PTPTN)',
+      content: `Here is the comprehensive guide to apply for a **PTPTN Higher Education Loan**:
+
+## Key Requirements & Application Steps:
+1. **Open Simpan SSPN Account**: You must have an active SSPN-i (SSPN Prime / Plus) account with a minimum deposit of RM20.
+2. **Bank Account**: Open a savings account with PTPTN's designated panel bank (e.g. Bank Islam, Maybank).
+3. **Application Window**: Submit your application online via the **[MyPTPTN Portal](https://myp.ptptn.gov.my)** during your institution's approved application intake period.
+4. **Loan Repayment Exemption**: First-class degree honours graduates can apply for a **100% full loan waiver** (converting loan to full scholarship).`,
+      eligibility: {
+        title: 'PTPTN Loan Eligibility Check',
+        summary: 'Review the qualification requirements before submitting your online application:',
+        criteria: [
+          { id: 'c1', label: 'Citizenship', requirement: 'Malaysian Citizen with valid MyKad', isMandatory: true },
+          { id: 'c2', label: 'Age Limit', requirement: 'Aged 45 years or below on application date', isMandatory: true },
+          { id: 'c3', label: 'Admission Offer', requirement: 'Valid offer letter for Diploma / Degree from accredited IPTA/IPTS/Politeknik', isMandatory: true },
+          { id: 'c4', label: 'Course Accreditation', requirement: 'Approved by KPT and accredited by MQA (Malaysian Qualifications Agency)', isMandatory: true },
+          { id: 'c5', label: 'Simpan SSPN Account', requirement: 'Active Simpan SSPN account registered under applicant MyKad', isMandatory: true },
+          { id: 'c6', label: 'Remaining Duration', requirement: 'Course remaining duration of at least 1 year', isMandatory: true },
+          { id: 'c7', label: 'No Sponsorship Overlap', requirement: 'No other concurrent educational loans or scholarships for the same course', isMandatory: true },
+        ],
+      },
+      actionCards: [
+        {
+          id: 'act-myptptn',
+          title: 'MyPTPTN Portal',
+          subtitle: 'Apply for study loan & check intake dates',
+          type: 'link',
+          url: 'https://myp.ptptn.gov.my',
+          btnText: 'Open MyPTPTN',
+          icon: 'external',
+        },
+        {
+          id: 'act-sspn',
+          title: 'Simpan SSPN Online',
+          subtitle: 'Open or top-up your SSPN savings account',
+          type: 'link',
+          url: 'https://www.ptptn.gov.my',
+          btnText: 'Open SSPN',
+          icon: 'external',
+        },
+      ],
+      suggestions: [
+        'How to get 100% PTPTN loan exemption for first class degree?',
+        'What is the difference between Maximum, Medium, and Minimum loan tiers?',
+        'Which panel banks are supported by PTPTN?',
+      ],
+    };
+  }
+
+  // 7. Housing / PR1MA / PPR / Property
   if (query.includes('house') || query.includes('rumah') || query.includes('pr1ma') || query.includes('ppr') || query.includes('property') || query.includes('selangorku')) {
     return {
       agency: 'Ministry of Housing (KPKT) / PR1MA',
@@ -340,6 +400,16 @@ Log in to **MyTax (mytax.hasil.gov.my)** using your IC number. If your PCB deduc
 
 ### How to Apply:
 Register for free on the official PR1MA portal at **[www.pr1ma.my](https://www.pr1ma.my)** and browse available homes in your desired location.`,
+      eligibility: {
+        title: 'PR1MA Housing Eligibility Check',
+        summary: 'Check if you qualify to purchase a PR1MA residential property:',
+        criteria: [
+          { id: 'c1', label: 'Citizenship', requirement: 'Malaysian Citizen (Individual or Joint Applicant)', isMandatory: true },
+          { id: 'c2', label: 'Age Limit', requirement: 'Aged 21 years and above', isMandatory: true },
+          { id: 'c3', label: 'Income Bracket', requirement: 'Household income between RM2,500 and RM15,000/month', isMandatory: true },
+          { id: 'c4', label: 'Home Ownership', requirement: 'First or second home buyer only', isMandatory: true },
+        ],
+      },
       actionCards: [
         {
           id: 'act-pr1ma',
