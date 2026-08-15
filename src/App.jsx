@@ -52,6 +52,16 @@ function App() {
       );
     }
 
+    if (currentPage === 'applications') {
+      return (
+        <ServicesPage
+          username={currentUser || 'Jason'}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+        />
+      );
+    }
+
     return (
       <HomePage
         username={currentUser || 'Jason'}
