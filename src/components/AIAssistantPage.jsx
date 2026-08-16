@@ -25,12 +25,15 @@ import {
   UserCheck,
   CheckSquare,
   MapPin,
-  Compass
+  Compass,
+  Mic,
+  MicOff
 } from 'lucide-react';
 import { marked } from 'marked';
 import Navbar from './Navbar';
 import { STARTER_PROMPTS } from './govAiData';
 import { askGovAi } from '../services/aiService';
+import { startDictation, stopDictation } from '../services/speechService';
 import PlanJourneyCard from './PlanJourneyCard';
 import ApplicationSubmissionModal from './ApplicationSubmissionModal';
 import {
@@ -95,9 +98,23 @@ const AIAssistantPage = ({
   const [submittingStep, setSubmittingStep] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [visibleJourneys, setVisibleJourneys] = useState({});
+  const [isListening, setIsListening] = useState(false);
+  const [speechError, setSpeechError] = useState(null);
 
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const currentAudioRef = useRef(null);
+
+  // Clean up audio/speech on unmount
+  useEffect(() => {
+    return () => {
+      stopDictation();
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+    };
+  }, []);
 
   // Toggle interactive criteria checkbox
   const handleToggleCriterion = (msgId, criterionId) => {
@@ -184,11 +201,49 @@ const AIAssistantPage = ({
       window.speechSynthesis.cancel();
     }
     setSpeakingMessageId(null);
+    if (activeJourney) {
+      saveUserJourney(username, activeJourney);
+    }
   };
 
-  // Send Message Logic with Live Gemini API
-  const handleSendMessage = async (textToSend = null) => {
-    const query = (textToSend !== null ? textToSend : inputText).trim();
+  // Voice dictation toggle
+  const handleToggleVoiceDictation = async () => {
+    if (isListening) {
+      stopDictation();
+      setIsListening(false);
+      return;
+    }
+
+    setSpeechError(null);
+    setIsListening(true);
+
+    const started = await startDictation({
+      lang,
+      onTranscript: (transcriptText) => {
+        setInputText(transcriptText);
+      },
+      onError: (errMsg) => {
+        console.warn('[Speech Error]:', errMsg);
+        setSpeechError(errMsg);
+        setIsListening(false);
+      },
+      onEnd: () => {
+        setIsListening(false);
+      },
+    });
+
+    if (!started) {
+      setIsListening(false);
+    }
+  };
+
+  // Handle send message to Gemini / Gov AI
+  const handleSendMessage = async (customQuery) => {
+    if (isListening) {
+      stopDictation();
+      setIsListening(false);
+    }
+    const query = (customQuery !== null && typeof customQuery === 'string' ? customQuery : inputText).trim();
     if (!query || isTyping) return;
 
     const userMsgId = 'usr-' + Date.now();
@@ -267,25 +322,62 @@ const AIAssistantPage = ({
     setTimeout(() => setCopiedMessageId(null), 2000);
   };
 
-  // Text to speech simulation
-  const handleToggleSpeak = (msgId, text) => {
+  // Text to speech with Google Cloud TTS and Web Speech fallback
+  const handleToggleSpeak = async (msgId, text) => {
     if (speakingMessageId === msgId) {
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
       window.speechSynthesis?.cancel();
       setSpeakingMessageId(null);
       return;
     }
 
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const cleanText = text.replace(/[*#>`|]/g, '');
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.rate = 1.0;
-      utterance.onend = () => setSpeakingMessageId(null);
-      utterance.onerror = () => setSpeakingMessageId(null);
-      window.speechSynthesis.speak(utterance);
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+    window.speechSynthesis?.cancel();
+
+    const cleanText = text.replace(/[*#>`|_-]/g, ' ').substring(0, 400);
+
+    try {
+      const ttsUrl = `/api/tts?text=${encodeURIComponent(cleanText)}&languageCode=${lang === 'MY' ? 'ms-MY' : 'en-US'}`;
+      const audio = new Audio(ttsUrl);
+      currentAudioRef.current = audio;
       setSpeakingMessageId(msgId);
-    } else {
-      alert('Speech synthesis is not supported on this browser.');
+
+      audio.onended = () => {
+        setSpeakingMessageId(null);
+        currentAudioRef.current = null;
+      };
+      audio.onerror = () => {
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(cleanText);
+          utterance.rate = 1.0;
+          utterance.lang = lang === 'MY' ? 'ms-MY' : 'en-US';
+          utterance.onend = () => setSpeakingMessageId(null);
+          utterance.onerror = () => setSpeakingMessageId(null);
+          window.speechSynthesis.speak(utterance);
+        } else {
+          setSpeakingMessageId(null);
+        }
+      };
+
+      await audio.play();
+    } catch (e) {
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.rate = 1.0;
+        utterance.lang = lang === 'MY' ? 'ms-MY' : 'en-US';
+        utterance.onend = () => setSpeakingMessageId(null);
+        utterance.onerror = () => setSpeakingMessageId(null);
+        window.speechSynthesis.speak(utterance);
+        setSpeakingMessageId(msgId);
+      } else {
+        setSpeakingMessageId(null);
+      }
     }
   };
 
@@ -361,16 +453,35 @@ const AIAssistantPage = ({
                 </div>
 
                 <div className="prompt-controls-bottom-simple">
-                  <span className="prompt-hint-text">Press Enter to ask</span>
-                  <button
-                    id="landing-submit-btn"
-                    className={`prompt-send-btn ${inputText.trim() && !isTyping ? 'btn-active' : ''}`}
-                    onClick={() => handleSendMessage()}
-                    disabled={!inputText.trim() || isTyping}
-                    title="Send Question"
-                  >
-                    <ArrowUp size={20} />
-                  </button>
+                  <span className="prompt-hint-text">
+                    {isListening ? (
+                      <span className="speech-live-indicator">
+                        <span className="live-dot-pulse"></span> Listening... Speak now
+                      </span>
+                    ) : (
+                      'Press Enter to ask'
+                    )}
+                  </span>
+                  <div className="prompt-actions-right">
+                    <button
+                      type="button"
+                      id="landing-mic-btn"
+                      className={`prompt-mic-btn ${isListening ? 'mic-btn-active' : ''}`}
+                      onClick={handleToggleVoiceDictation}
+                      title={isListening ? "Stop Voice Dictation" : "Voice Input (Speech-to-Text)"}
+                    >
+                      {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                    </button>
+                    <button
+                      id="landing-submit-btn"
+                      className={`prompt-send-btn ${inputText.trim() && !isTyping ? 'btn-active' : ''}`}
+                      onClick={() => handleSendMessage()}
+                      disabled={!inputText.trim() || isTyping}
+                      title="Send Question"
+                    >
+                      <ArrowUp size={20} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -727,13 +838,22 @@ const AIAssistantPage = ({
             <div className="simple-bottom-input-container">
               <textarea
                 className="simple-bottom-textarea"
-                placeholder="Ask a follow-up question..."
+                placeholder={isListening ? "Listening to your voice..." : "Ask a follow-up question..."}
                 rows={1}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 autoFocus
               />
+              <button
+                type="button"
+                id="bottom-mic-btn"
+                className={`simple-bottom-mic-btn ${isListening ? 'mic-btn-active' : ''}`}
+                onClick={handleToggleVoiceDictation}
+                title={isListening ? "Stop Voice Dictation" : "Voice Input (Speech to Text)"}
+              >
+                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+              </button>
               <button
                 className={`simple-bottom-send-btn ${inputText.trim() ? 'send-active' : ''}`}
                 onClick={() => handleSendMessage()}
