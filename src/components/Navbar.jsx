@@ -114,7 +114,13 @@ const Navbar = ({ username, onLogout, activePage = 'home', onNavigate }) => {
                   </div>
                 </div>
                 <hr className="nb-dropdown-divider" />
-                <button className="nb-dropdown-item">
+                <button 
+                  className="nb-dropdown-item"
+                  onClick={() => {
+                    handleNavClick('profile');
+                    setProfileOpen(false);
+                  }}
+                >
                   <User size={15} /> My Profile
                 </button>
                 <hr className="nb-dropdown-divider" />
