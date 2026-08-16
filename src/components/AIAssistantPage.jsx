@@ -76,7 +76,14 @@ const renderMarkdown = (content) => {
   }
 };
 
-const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuery = '' }) => {
+const AIAssistantPage = ({
+  username = 'Jason',
+  onLogout,
+  onNavigate,
+  initialQuery = '',
+  lang = 'EN',
+  onLangChange,
+}) => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -311,6 +318,8 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
         onLogout={onLogout}
         activePage="ai"
         onNavigate={onNavigate}
+        lang={lang}
+        onLangChange={onLangChange}
       />
 
       {/* Main Full-Width AI Workspace */}
