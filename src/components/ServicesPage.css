@@ -304,10 +304,9 @@
 
 .sp-card-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 16px;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 .sp-card-front-buttons {
@@ -315,6 +314,43 @@
   flex-wrap: wrap;
   gap: 6px;
   flex: 1;
+}
+
+/* Footer row: Learn More + Access button */
+.sp-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Learn More text link */
+.sp-learn-more-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6366f1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.sp-learn-more-link:hover {
+  color: #4f46e5;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Back-face version (full-width centered) */
+.sp-learn-more-link--back {
+  justify-content: center;
+  font-size: 0.8rem;
+  color: #4f46e5;
+  width: 100%;
+  padding: 4px 0;
 }
 
 .sp-card-expand-btn {
@@ -331,6 +367,16 @@
 
 .sp-card-expand-btn:hover {
   background: #dbeafe;
+}
+
+/* "Other" tab — slightly different accent */
+.sp-card-expand-btn--other {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.sp-card-expand-btn--other:hover {
+  background: #ede9fe;
 }
 
 .sp-card-expand-placeholder {
@@ -473,7 +519,44 @@
   border-top: 1px solid #dbeafe;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+}
+
+/* ── Other tab field rows ── */
+.sp-other-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0ecff;
+}
+
+.sp-other-field:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.sp-other-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #6d28d9;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sp-other-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 0;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.sp-other-empty svg {
+  opacity: 0.4;
 }
 
 .sp-card-btn-full {

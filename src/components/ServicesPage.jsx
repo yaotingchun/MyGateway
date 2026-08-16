@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ExternalLink, Search, X, Loader2, ArrowLeft, Phone, Mail, Globe, MessageSquare } from 'lucide-react';
+import { ExternalLink, Search, X, Loader2, ArrowLeft, Phone, Mail, Globe, MessageSquare, BookOpen, Info } from 'lucide-react';
 import { getServices } from '../services/serviceService';
 import Navbar from './Navbar';
 import './ServicesPage.css';
@@ -126,7 +126,7 @@ const parseContactButtons = (text) => {
 
 // ── Service Card (4-State Flip Card) ──────────────────────────────────────────
 function ServiceCard({ service }) {
-  const [activeFace, setActiveFace] = useState('front'); // 'front', 'requirements', 'steps', 'contacts'
+  const [activeFace, setActiveFace] = useState('front'); // 'front', 'requirements', 'steps', 'contacts', 'other'
   const isFlipped = activeFace !== 'front';
 
   const cat = CATEGORIES.find(
@@ -168,7 +168,6 @@ function ServiceCard({ service }) {
                     </div>
                   );
                 }
-                
                 return (
                   <a
                     key={i}
@@ -197,6 +196,36 @@ function ServiceCard({ service }) {
             </div>
           </div>
         );
+      case 'other': {
+        const otherFields = [
+          { key: 'targetAudience',  label: 'Target Audience'    },
+          { key: 'methodOfService', label: 'Method of Service'  },
+          { key: 'duration',        label: 'Duration'           },
+          { key: 'chargePayment',   label: 'Charge & Payment'   },
+          { key: 'paymentMethod',   label: 'Payment Method'     },
+        ];
+        const available = otherFields.filter((f) => service[f.key]);
+        if (available.length === 0) {
+          return (
+            <div className="sp-detail-section">
+              <div className="sp-other-empty">
+                <Info size={28} />
+                <p>Additional info not yet available for this service.</p>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div className="sp-detail-section">
+            {available.map((f) => (
+              <div key={f.key} className="sp-other-field">
+                <span className="sp-other-label">{f.label}</span>
+                <div className="sp-detail-text">{renderTextWithLinks(service[f.key])}</div>
+              </div>
+            ))}
+          </div>
+        );
+      }
       default:
         return null;
     }
@@ -235,14 +264,32 @@ function ServiceCard({ service }) {
               )}
               {service.contacts && (
                 <button className="sp-card-expand-btn" onClick={() => setActiveFace('contacts')}>
-                  Contacts
+                  Contact
                 </button>
               )}
+              <button
+                className="sp-card-expand-btn sp-card-expand-btn--other"
+                onClick={() => setActiveFace('other')}
+              >
+                Other
+              </button>
             </div>
-            
+          </div>
+
+          <div className="sp-card-footer">
+            {service.learnMoreUrl && (
+              <a
+                className="sp-learn-more-link"
+                href={service.learnMoreUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <BookOpen size={13} /> Learn More
+              </a>
+            )}
             <a
               className="sp-card-btn"
-              href={service.serviceUrl}
+              href={service.directUrl || service.serviceUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -268,9 +315,19 @@ function ServiceCard({ service }) {
           </div>
           
           <div className="sp-card-back-footer">
+            {service.serviceUrl && (
+              <a
+                className="sp-learn-more-link sp-learn-more-link--back"
+                href={service.serviceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <BookOpen size={13} /> Learn More on gov.my
+              </a>
+            )}
             <a
               className="sp-card-btn sp-card-btn-full"
-              href={service.serviceUrl}
+              href={service.directUrl || service.serviceUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
