@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowRight, Info } from 'lucide-react';
 import './HeroSection.css';
 
-const HeroSection = () => {
+const HeroSection = ({ onLoginClick }) => {
   return (
     <div className="hero-section">
       <div className="hero-content">
@@ -17,8 +17,8 @@ const HeroSection = () => {
         </p>
         
         <div className="hero-buttons">
-          <button className="btn-primary">
-            <ArrowRight size={18} className="btn-icon" /> Get Started
+          <button className="btn-primary" onClick={onLoginClick}>
+            <ArrowRight size={18} className="btn-icon" /> Log In
           </button>
           <button className="btn-secondary">
             <Info size={18} className="btn-icon info-icon" /> Learn More

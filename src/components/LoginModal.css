@@ -1,0 +1,435 @@
+.login-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.login-modal-container {
+  display: flex;
+  background-color: white;
+  width: 900px;
+  max-width: 95%;
+  height: 600px;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: modalScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Left Side: Purple/Pink Gradient */
+.login-modal-left {
+  width: 38%;
+  background: linear-gradient(135deg, #a21caf 0%, #701a75 50%, #4c1d95 100%);
+  padding: 40px;
+  color: white;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+.login-modal-text-content {
+  position: relative;
+  z-index: 10;
+}
+
+.login-modal-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.login-modal-subtitle {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  margin-top: 16px;
+  font-weight: 500;
+}
+
+/* Network Background Nodes */
+.network-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.network-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.6;
+}
+
+.network-node {
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* Right Side: Content Area */
+.login-modal-right {
+  width: 62%;
+  padding: 30px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-color: #ffffff;
+}
+
+.login-modal-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-modal-close-btn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.login-modal-content-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Login Boxes */
+.login-box {
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.citizen-box {
+  border: 2px solid #0f172a;
+  background-color: white;
+}
+
+.non-citizen-box {
+  background-color: #f1f5f9;
+}
+
+.login-box-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.login-box-subtitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  margin: 4px 0 16px 0;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* mydigitalID logo styling */
+.mydigitalid-logo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+
+.melalui-text {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.mydigitalid-logo {
+  display: flex;
+  align-items: center;
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.mydigitalid-my {
+  color: #dc2626; /* Crimson Red */
+}
+
+.mydigitalid-digital {
+  color: #1e3a8a; /* Dark Blue */
+}
+
+.mydigitalid-id {
+  color: #0ea5e9; /* Light Cyan */
+  font-style: italic;
+  font-family: 'Times New Roman', Times, serif; /* Give it the distinctive logo style */
+}
+
+/* Modal Login Buttons */
+.modal-login-btn {
+  border: none;
+  border-radius: 30px;
+  padding: 10px 48px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  width: 220px;
+}
+
+.citizen-btn {
+  background-color: #1d63ed;
+  color: white;
+}
+
+.citizen-btn:hover {
+  background-color: #154ec1;
+  transform: translateY(-1px);
+}
+
+.non-citizen-btn {
+  background-color: #1e293b;
+  color: white;
+}
+
+.non-citizen-btn:hover {
+  background-color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.register-link-text {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 16px 0 0 0;
+  font-weight: 500;
+}
+
+.modal-link {
+  color: #1d63ed;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.modal-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .login-modal-container {
+    flex-direction: column;
+    height: auto;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .login-modal-left {
+    width: 100%;
+    padding: 24px;
+  }
+  
+  .login-modal-right {
+    width: 100%;
+    padding: 24px;
+  }
+  
+  .network-bg {
+    display: none; /* Hide complex SVGs on mobile for performance and space */
+  }
+}
+
+/* Morph container to smaller, portrait layout when QR code is active */
+.login-modal-container.qr-active {
+  width: 480px;
+  height: 640px;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.login-modal-right.qr-full-width {
+  width: 100%;
+  height: 100%;
+  padding: 30px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* QR Code Screen layout */
+.qr-screen-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* Concentric circles background pattern */
+.qr-bg-pattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.45;
+}
+
+.qr-screen-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.mydigitalid-logo.larger-logo {
+  font-size: 2.8rem;
+  margin-bottom: 8px;
+}
+
+.qr-screen-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+/* Orange countdown banner */
+.qr-countdown-banner {
+  background-color: #ffb612; /* Golden orange */
+  color: #1e3a8a; /* Dark Blue */
+  font-size: 14px;
+  font-weight: 800;
+  width: 100%;
+  padding: 12px 16px;
+  box-sizing: border-box;
+  text-align: center;
+  border-radius: 4px;
+  margin: 16px 0;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  letter-spacing: 0.2px;
+}
+
+.qr-instruction {
+  font-size: 15px;
+  color: #334155;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  position: relative;
+  z-index: 2;
+}
+
+/* QR Code Outer Box */
+.qr-code-box {
+  background-color: #d1d5db; /* Light grey */
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin-bottom: 16px;
+}
+
+.qr-code-box:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.qr-code-box svg {
+  border-radius: 4px;
+}
+
+/* Cancel Button */
+.qr-cancel-btn {
+  background-color: #ff0000; /* Red */
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 10px 48px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  width: 220px;
+  position: relative;
+  z-index: 2;
+}
+
+.qr-cancel-btn:hover {
+  background-color: #cc0000;
+  transform: translateY(-1px);
+}
+
+/* Footer text */
+.qr-footer-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 16px 0 0 0;
+  position: relative;
+  z-index: 2;
+  letter-spacing: 0.2px;
+}

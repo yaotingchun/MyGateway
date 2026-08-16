@@ -355,3 +355,54 @@
   .pp-grid { grid-template-columns: 1fr; }
   .pp-full-width { grid-column: span 1; }
 }
+
+/* Loading State Styling */
+.pp-loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  background-color: var(--ice-bg);
+  min-height: calc(100vh - 70px); /* Adjust based on navbar height */
+}
+
+.pp-loading-card {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 40px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 10px 25px rgba(48, 65, 102, 0.05);
+  border: 1px solid var(--border-color);
+  animation: ppPulse 2s infinite ease-in-out;
+}
+
+.pp-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--ice-bg);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: ppSpin 1s infinite linear;
+}
+
+.pp-loading-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--dark-navy);
+  margin: 0;
+  letter-spacing: 0.5px;
+  font-family: inherit;
+}
+
+@keyframes ppSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ppPulse {
+  0% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.02); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.95; }
+}

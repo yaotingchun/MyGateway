@@ -9,9 +9,9 @@ const FieldView = ({ label, value, verified, fullWidth }) => {
     <div className={`pp-field-view ${fullWidth ? 'pp-full-width' : ''}`}>
       <span className="pp-field-label">
         {label}
-        {verified !== undefined && (
-          <span className={`pp-verify-badge ${verified ? 'pp-verified' : 'pp-unverified'}`}>
-            <span className="pp-dot"></span> {verified ? 'Verified' : 'Unverified'}
+        {verified === true && (
+          <span className="pp-verify-badge pp-verified">
+            <span className="pp-dot"></span> Verified
           </span>
         )}
       </span>
@@ -133,7 +133,12 @@ const ProfilePage = ({ username, onLogout, onNavigate }) => {
     return (
       <div className="pp-root">
         <Navbar username={username} onLogout={onLogout} activePage="profile" onNavigate={onNavigate} />
-        <div className="pp-loading">Loading profile...</div>
+        <div className="pp-loading-container">
+          <div className="pp-loading-card">
+            <div className="pp-loading-spinner"></div>
+            <p className="pp-loading-text">Loading profile...</p>
+          </div>
+        </div>
       </div>
     );
   }
