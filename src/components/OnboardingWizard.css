@@ -1,0 +1,269 @@
+.ow-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(48, 65, 102, 0.4);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  font-family: 'Inter', sans-serif;
+}
+
+.ow-card {
+  background: #FFFFFF;
+  width: 100%;
+  max-width: 640px;
+  border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(39, 89, 205, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Progress */
+.ow-progress-container {
+  padding: 24px 32px 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ow-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #BDD1FF;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ow-progress-fill {
+  height: 100%;
+  background: #2759CD;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.ow-step-indicator {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #304166;
+}
+
+/* Content */
+.ow-content {
+  padding: 32px;
+  flex: 1;
+}
+
+.ow-step-content h2 {
+  font-size: 1.6rem;
+  color: #304166;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.ow-desc {
+  font-size: 0.95rem;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0 0 32px;
+}
+
+.ow-step-welcome, .ow-step-complete {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.ow-icon-circle {
+  width: 72px;
+  height: 72px;
+  background: #EFF5FC;
+  color: #2759CD;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+/* Forms */
+.ow-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.ow-full-width {
+  grid-column: span 2;
+}
+
+.ow-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ow-input-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #304166;
+}
+
+.ow-input-group input, 
+.ow-input-group select, 
+.ow-input-group textarea {
+  padding: 12px 14px;
+  border: 1.5px solid #dce3ed;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: #304166;
+  outline: none;
+  transition: all 0.2s;
+  background: #FFFFFF;
+}
+
+.ow-input-group input:focus, 
+.ow-input-group select:focus, 
+.ow-input-group textarea:focus {
+  border-color: #2759CD;
+  box-shadow: 0 0 0 3px rgba(39, 89, 205, 0.1);
+}
+
+/* Ring */
+.ow-ring-container {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 24px;
+}
+
+.ow-circular-chart {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  max-height: 250px;
+}
+
+.ow-circle-bg {
+  fill: none;
+  stroke: #EFF5FC;
+  stroke-width: 3.8;
+}
+
+.ow-circle {
+  fill: none;
+  stroke-width: 3.8;
+  stroke-linecap: round;
+  stroke: #2759CD;
+  animation: progress 1s ease-out forwards;
+}
+
+@keyframes progress {
+  0% { stroke-dasharray: 0 100; }
+}
+
+.ow-percentage {
+  fill: #304166;
+  font-size: 8px;
+  font-weight: bold;
+  text-anchor: middle;
+}
+
+/* Footer */
+.ow-footer {
+  padding: 24px 32px;
+  border-top: 1px solid #EFF5FC;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #FAFAFA;
+}
+
+.ow-footer-left, .ow-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ow-btn-primary {
+  background: #2759CD;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.ow-btn-primary:hover {
+  background: #1d45a3;
+}
+
+.ow-btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.ow-btn-text, .ow-btn-skip {
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.ow-btn-text {
+  color: #6b7280;
+}
+
+.ow-btn-text:hover {
+  color: #304166;
+}
+
+.ow-btn-skip {
+  color: #304166;
+  opacity: 0.8;
+}
+
+.ow-btn-skip:hover {
+  opacity: 1;
+}
+
+.ml-2 {
+  margin-left: 8px;
+}
+
+@media (max-width: 600px) {
+  .ow-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .ow-full-width {
+    grid-column: span 1;
+  }
+  .ow-footer {
+    flex-direction: column-reverse;
+    gap: 16px;
+  }
+  .ow-footer-left, .ow-footer-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .ow-btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}

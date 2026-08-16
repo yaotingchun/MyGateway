@@ -4,6 +4,9 @@ import LoginForm from './components/LoginForm';
 import HomePage from './components/HomePage';
 import ServicesPage from './components/ServicesPage';
 import AIAssistantPage from './components/AIAssistantPage';
+import ProfilePage from './components/ProfilePage';
+import OnboardingWizard from './components/OnboardingWizard';
+import { isFirstTimeUser } from './utils/profileStore';
 import './App.css';
 import bgImage from './assets/kolaxus_background3.webp';
 
@@ -13,11 +16,21 @@ function App() {
   const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'ai' | 'applications' | 'profile'
   const [aiInitialQuery, setAiInitialQuery] = useState('');
   const [lang, setLang] = useState('EN');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isCheckingUser, setIsCheckingUser] = useState(false);
 
-  const handleLogin = (username) => {
-    setCurrentUser(username || 'Jason');
+  const handleLogin = async (username) => {
+    const user = username || 'Jason';
+    setCurrentUser(user);
     setIsLoggedIn(true);
-    setCurrentPage('home');
+    setIsCheckingUser(true);
+    const firstTime = await isFirstTimeUser(user);
+    if (firstTime) {
+      setShowOnboarding(true);
+    } else {
+      setCurrentPage('home');
+    }
+    setIsCheckingUser(false);
   };
 
   const handleLogout = () => {
@@ -25,6 +38,7 @@ function App() {
     setCurrentUser('');
     setCurrentPage('home');
     setAiInitialQuery('');
+    setShowOnboarding(false);
   };
 
   const handleNavigate = (pageId, query = '') => {
@@ -42,8 +56,17 @@ function App() {
   };
 
   if (isLoggedIn) {
-    if (currentPage === 'ai') {
+    if (isCheckingUser) {
       return (
+        <div className="app-container" style={{ backgroundColor: '#EFF5FC', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ fontSize: '1.2rem', color: '#304166', fontWeight: 600 }}>Loading profile...</div>
+        </div>
+      );
+    }
+
+    let pageContent;
+    if (currentPage === 'ai') {
+      pageContent = (
         <AIAssistantPage
           username={currentUser || 'Jason'}
           onLogout={handleLogout}
@@ -53,10 +76,8 @@ function App() {
           onLangChange={setLang}
         />
       );
-    }
-
-    if (currentPage === 'applications') {
-      return (
+    } else if (currentPage === 'applications') {
+      pageContent = (
         <ServicesPage
           username={currentUser || 'Jason'}
           onLogout={handleLogout}
@@ -65,17 +86,40 @@ function App() {
           onLangChange={setLang}
         />
       );
+    } else if (currentPage === 'profile') {
+      pageContent = (
+        <ProfilePage
+          username={currentUser || 'Jason'}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+        />
+      );
+    } else {
+      pageContent = (
+        <HomePage
+          username={currentUser || 'Jason'}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+          onAskAi={handleAskAi}
+          lang={lang}
+          onLangChange={setLang}
+        />
+      );
     }
 
     return (
-      <HomePage
-        username={currentUser || 'Jason'}
-        onLogout={handleLogout}
-        onNavigate={handleNavigate}
-        onAskAi={handleAskAi}
-        lang={lang}
-        onLangChange={setLang}
-      />
+      <>
+        {pageContent}
+        {showOnboarding && (
+          <OnboardingWizard 
+            username={currentUser || 'Jason'} 
+            onComplete={() => {
+              setShowOnboarding(false);
+              setCurrentPage('home');
+            }} 
+          />
+        )}
+      </>
     );
   }
 
