@@ -15,8 +15,7 @@ const NAV_LINKS = [
   { id: 'profile', label: 'Profile' },
 ];
 
-const Navbar = ({ username, onLogout, activePage = 'home', onNavigate }) => {
-  const [lang, setLang] = useState('EN');
+const Navbar = ({ username, onLogout, activePage = 'home', onNavigate, lang = 'EN', onLangChange }) => {
   const [langOpen, setLangOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifCount] = useState(2);
@@ -76,7 +75,7 @@ const Navbar = ({ username, onLogout, activePage = 'home', onNavigate }) => {
                   <button
                     key={l.code}
                     className={`nb-dropdown-item ${lang === l.code ? 'nb-dropdown-active' : ''}`}
-                    onClick={() => { setLang(l.code); setLangOpen(false); }}
+                  onClick={() => { if (onLangChange) onLangChange(l.code); setLangOpen(false); }}
                   >
                     {l.label}
                   </button>

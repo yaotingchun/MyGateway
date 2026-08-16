@@ -2,15 +2,17 @@ import React, { useState } from 'react';
 import HeroSection from './components/HeroSection';
 import LoginForm from './components/LoginForm';
 import HomePage from './components/HomePage';
+import ServicesPage from './components/ServicesPage';
 import AIAssistantPage from './components/AIAssistantPage';
 import './App.css';
 import bgImage from './assets/kolaxus_background3.webp';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn]   = useState(false);
   const [currentUser, setCurrentUser] = useState('');
   const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'ai' | 'applications' | 'profile'
   const [aiInitialQuery, setAiInitialQuery] = useState('');
+  const [lang, setLang] = useState('EN');
 
   const handleLogin = (username) => {
     setCurrentUser(username || 'Jason');
@@ -47,6 +49,20 @@ function App() {
           onLogout={handleLogout}
           onNavigate={handleNavigate}
           initialQuery={aiInitialQuery}
+          lang={lang}
+          onLangChange={setLang}
+        />
+      );
+    }
+
+    if (currentPage === 'applications') {
+      return (
+        <ServicesPage
+          username={currentUser || 'Jason'}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+          lang={lang}
+          onLangChange={setLang}
         />
       );
     }
@@ -57,6 +73,8 @@ function App() {
         onLogout={handleLogout}
         onNavigate={handleNavigate}
         onAskAi={handleAskAi}
+        lang={lang}
+        onLangChange={setLang}
       />
     );
   }
