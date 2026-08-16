@@ -21,6 +21,84 @@ const CATEGORIES = [
 
 const PAGE_SIZE = 12;
 
+// ── BM / EN Translations ──────────────────────────────────────────────────────
+const TRANSLATIONS = {
+  EN: {
+    pageTitle:        'Government Digital Services',
+    pageSubtitle:     (n) => `Browse ${n} official government services — search or filter by category.`,
+    searchPlaceholder:'Search by name, agency or keyword…',
+    recommended:      'Recommended',
+    progress:         'Progress',
+    inProgress:       'In Progress',
+    actionRequired:   'Action Required',
+    completed:        'Completed',
+    notStarted:       'Not Started',
+    showing:          (n) => `Showing ${n} result${n !== 1 ? 's' : ''}`,
+    available:        (n) => `${n} services available`,
+    loading:          'Loading services from Firestore…',
+    empty:            'No services match your search. Try a different keyword or category.',
+    loadMore:         (n) => `Load more (${n} remaining)`,
+    // Card
+    requirements:     'Requirements',
+    steps:            'Steps',
+    contact:          'Contact',
+    other:            'Other',
+    access:           'Access',
+    learnMore:        'Learn More',
+    accessService:    'Access Service',
+    learnMoreGov:     'Learn More on gov.my',
+    back:             'Back',
+    // Card back sections
+    contacts:         'Contacts',
+    // Other tab fields
+    targetAudience:   'Target Audience',
+    methodOfService:  'Method of Service',
+    duration:         'Duration',
+    chargePayment:    'Charge & Payment',
+    paymentMethod:    'Payment Method',
+    noOtherInfo:      'Additional info not yet available for this service.',
+    // Categories
+    all:              'All',
+  },
+  MY: {
+    pageTitle:        'Perkhidmatan Digital Kerajaan',
+    pageSubtitle:     (n) => `Layari ${n} perkhidmatan kerajaan rasmi — cari atau tapis mengikut kategori.`,
+    searchPlaceholder:'Cari mengikut nama, agensi atau kata kunci…',
+    recommended:      'Disyorkan',
+    progress:         'Kemajuan',
+    inProgress:       'Dalam Proses',
+    actionRequired:   'Tindakan Diperlukan',
+    completed:        'Selesai',
+    notStarted:       'Belum Dimulakan',
+    showing:          (n) => `Menunjukkan ${n} keputusan`,
+    available:        (n) => `${n} perkhidmatan tersedia`,
+    loading:          'Memuatkan perkhidmatan daripada Firestore…',
+    empty:            'Tiada perkhidmatan yang sepadan. Cuba kata kunci atau kategori lain.',
+    loadMore:         (n) => `Muatkan lagi (${n} lagi)`,
+    // Card
+    requirements:     'Keperluan',
+    steps:            'Langkah',
+    contact:          'Hubungi',
+    other:            'Lain-lain',
+    access:           'Akses',
+    learnMore:        'Ketahui Lebih',
+    accessService:    'Akses Perkhidmatan',
+    learnMoreGov:     'Ketahui Lebih di gov.my',
+    back:             'Kembali',
+    // Card back sections
+    contacts:         'Kenalan',
+    // Other tab fields
+    targetAudience:   'Kumpulan Sasaran',
+    methodOfService:  'Kaedah Perkhidmatan',
+    duration:         'Tempoh',
+    chargePayment:    'Bayaran & Cas',
+    paymentMethod:    'Kaedah Pembayaran',
+    noOtherInfo:      'Maklumat tambahan belum tersedia untuk perkhidmatan ini.',
+    // Categories
+    all:              'Semua',
+  },
+};
+
 // ── Helper to render text with links ──────────────────────────────────────────
 const renderTextWithLinks = (text) => {
   if (!text) return null;
@@ -125,7 +203,8 @@ const parseContactButtons = (text) => {
 };
 
 // ── Service Card (4-State Flip Card) ──────────────────────────────────────────
-function ServiceCard({ service }) {
+function ServiceCard({ service, lang = 'EN' }) {
+  const T = TRANSLATIONS[lang] || TRANSLATIONS.EN;
   const [activeFace, setActiveFace] = useState('front'); // 'front', 'requirements', 'steps', 'contacts', 'other'
   const isFlipped = activeFace !== 'front';
 
@@ -133,28 +212,49 @@ function ServiceCard({ service }) {
     (c) => c.label.toLowerCase() === (service.category || '').toLowerCase()
   ) || CATEGORIES[CATEGORIES.length - 1];
 
+  // ── BM-aware field helpers ─────────────────────────────────────────────────
+  const isBM  = lang === 'MY';
+  const sName = (isBM && service.nameBM)        ? service.nameBM        : service.name;
+  const sAgency = (isBM && service.agencyBM)    ? service.agencyBM      : service.agency;
+  const sDesc   = (isBM && service.descriptionBM) ? service.descriptionBM : service.description;
+  const sReqs   = (isBM && service.requirementsBM) ? service.requirementsBM : service.requirements;
+  const sSteps  = (isBM && service.stepsBM)     ? service.stepsBM       : service.steps;
+  const sContacts = (isBM && service.contactsBM) ? service.contactsBM   : service.contacts;
+  // Other tab: use BM field keys when available, fall back to EN
+  const otherFields = [
+    { enKey: 'targetAudience',  bmKey: 'targetAudienceBM',  label: T.targetAudience  },
+    { enKey: 'methodOfService', bmKey: 'methodOfServiceBM', label: T.methodOfService },
+    { enKey: 'duration',        bmKey: 'durationBM',        label: T.duration        },
+    { enKey: 'chargePayment',   bmKey: 'chargePaymentBM',   label: T.chargePayment   },
+    { enKey: 'paymentMethod',   bmKey: 'paymentMethodBM',   label: T.paymentMethod   },
+  ];
+  const resolvedOtherFields = otherFields.map((f) => ({
+    key:   (isBM && service[f.bmKey]) ? f.bmKey : f.enKey,
+    label: f.label,
+  }));
+
   const renderBackContent = () => {
     switch (activeFace) {
       case 'requirements':
         return (
           <div className="sp-detail-section">
-            <h4 className="sp-detail-title">Requirements</h4>
-            <div className="sp-detail-text">{renderTextWithLinks(service.requirements)}</div>
+            <h4 className="sp-detail-title">{T.requirements}</h4>
+            <div className="sp-detail-text">{renderTextWithLinks(sReqs)}</div>
           </div>
         );
       case 'steps':
         return (
           <div className="sp-detail-section">
-            <h4 className="sp-detail-title">Steps</h4>
-            <div className="sp-detail-text">{renderTextWithLinks(service.steps)}</div>
+            <h4 className="sp-detail-title">{T.steps}</h4>
+            <div className="sp-detail-text">{renderTextWithLinks(sSteps)}</div>
           </div>
         );
       case 'contacts':
         return (
           <div className="sp-detail-section">
-            <h4 className="sp-detail-title">Contacts</h4>
+            <h4 className="sp-detail-title">{T.contacts}</h4>
             <div className="sp-contact-buttons" style={{ marginTop: '12px' }}>
-              {parseContactButtons(service.contacts).map((contact, i) => {
+              {parseContactButtons(sContacts).map((contact, i) => {
                 if (contact.type === 'phone') {
                   return (
                     <div
@@ -198,19 +298,19 @@ function ServiceCard({ service }) {
         );
       case 'other': {
         const otherFields = [
-          { key: 'targetAudience',  label: 'Target Audience'    },
-          { key: 'methodOfService', label: 'Method of Service'  },
-          { key: 'duration',        label: 'Duration'           },
-          { key: 'chargePayment',   label: 'Charge & Payment'   },
-          { key: 'paymentMethod',   label: 'Payment Method'     },
+          { key: 'targetAudience',  label: T.targetAudience  },
+          { key: 'methodOfService', label: T.methodOfService },
+          { key: 'duration',        label: T.duration        },
+          { key: 'chargePayment',   label: T.chargePayment   },
+          { key: 'paymentMethod',   label: T.paymentMethod   },
         ];
-        const available = otherFields.filter((f) => service[f.key]);
+        const available = resolvedOtherFields.filter((f) => service[f.key]);
         if (available.length === 0) {
           return (
             <div className="sp-detail-section">
               <div className="sp-other-empty">
                 <Info size={28} />
-                <p>Additional info not yet available for this service.</p>
+                <p>{T.noOtherInfo}</p>
               </div>
             </div>
           );
@@ -241,37 +341,37 @@ function ServiceCard({ service }) {
             <span className="sp-card-icon">{cat.icon}</span>
             <span className="sp-card-cat-pill">{service.category || 'General'}</span>
           </div>
-          <h3 className="sp-card-name">{service.name}</h3>
-          <p className="sp-card-agency">{service.agency}</p>
+          <h3 className="sp-card-name">{sName}</h3>
+          <p className="sp-card-agency">{sAgency}</p>
           
           <p className="sp-card-desc">
-            {service.description
-              ? service.description.slice(0, 120) + (service.description.length > 120 ? '…' : '')
-              : 'No description available.'}
+            {sDesc
+              ? sDesc.slice(0, 120) + (sDesc.length > 120 ? '…' : '')
+              : (isBM ? 'Tiada penerangan tersedia.' : 'No description available.')}
           </p>
 
           <div className="sp-card-actions">
             <div className="sp-card-front-buttons">
-              {service.requirements && (
+              {sReqs && (
                 <button className="sp-card-expand-btn" onClick={() => setActiveFace('requirements')}>
-                  Requirements
+                  {T.requirements}
                 </button>
               )}
-              {service.steps && (
+              {sSteps && (
                 <button className="sp-card-expand-btn" onClick={() => setActiveFace('steps')}>
-                  Steps
+                  {T.steps}
                 </button>
               )}
-              {service.contacts && (
+              {sContacts && (
                 <button className="sp-card-expand-btn" onClick={() => setActiveFace('contacts')}>
-                  Contact
+                  {T.contact}
                 </button>
               )}
               <button
                 className="sp-card-expand-btn sp-card-expand-btn--other"
                 onClick={() => setActiveFace('other')}
               >
-                Other
+                {T.other}
               </button>
             </div>
           </div>
@@ -284,7 +384,7 @@ function ServiceCard({ service }) {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <BookOpen size={13} /> Learn More
+                <BookOpen size={13} /> {T.learnMore}
               </a>
             )}
             <a
@@ -293,7 +393,7 @@ function ServiceCard({ service }) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Access <ExternalLink size={14} />
+              {T.access} <ExternalLink size={14} />
             </a>
           </div>
         </div>
@@ -305,7 +405,7 @@ function ServiceCard({ service }) {
               className="sp-card-back-btn" 
               onClick={() => setActiveFace('front')}
             >
-              <ArrowLeft size={16} /> Back
+              <ArrowLeft size={16} /> {T.back}
             </button>
             <h3 className="sp-card-back-title">{service.name}</h3>
           </div>
@@ -322,7 +422,7 @@ function ServiceCard({ service }) {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <BookOpen size={13} /> Learn More on gov.my
+                <BookOpen size={13} /> {T.learnMoreGov}
               </a>
             )}
             <a
@@ -331,7 +431,7 @@ function ServiceCard({ service }) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Access Service <ExternalLink size={14} />
+              {T.accessService} <ExternalLink size={14} />
             </a>
           </div>
         </div>
@@ -342,7 +442,8 @@ function ServiceCard({ service }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
-const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLogout }) => {
+const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLogout, lang = 'EN', onLangChange }) => {
+  const T = TRANSLATIONS[lang] || TRANSLATIONS.EN;
   const [allServices, setAllServices]     = useState([]);
   const [filtered, setFiltered]           = useState([]);
   const [loading, setLoading]             = useState(true);
@@ -402,15 +503,17 @@ const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLo
         onLogout={onLogout}
         onNavigate={onNavigate}
         activePage="applications"
+        lang={lang}
+        onLangChange={onLangChange}
       />
 
       <main className="sp-main">
         {/* ── Header ── */}
         <div className="sp-header">
           <div className="sp-header-text">
-            <h1 className="sp-title">Government Digital Services</h1>
+            <h1 className="sp-title">{T.pageTitle}</h1>
             <p className="sp-subtitle">
-              Browse {allServices.length > 0 ? allServices.length : '379+'} official government services — search or filter by category.
+              {T.pageSubtitle(allServices.length > 0 ? allServices.length : '379+')}
             </p>
           </div>
 
@@ -421,7 +524,7 @@ const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLo
               id="services-search"
               className="sp-search"
               type="text"
-              placeholder="Search by name, agency or keyword…"
+              placeholder={T.searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -443,23 +546,23 @@ const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLo
             >
               {CATEGORIES.map((cat) => (
                 <option key={cat.label} value={cat.label}>
-                  {cat.label}
+                  {cat.label === 'All' ? T.all : cat.label}
                 </option>
               ))}
             </select>
           </div>
 
           <button className="sp-filter-btn" onClick={() => {}}>
-            Recommended
+            {T.recommended}
           </button>
 
           <div className="sp-filter-group">
             <select className="sp-filter-select" defaultValue="Status">
-              <option value="Status" disabled>Progress</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Action Required">Action Required</option>
-              <option value="Completed">Completed</option>
-              <option value="Not Started">Not Started</option>
+              <option value="Status" disabled>{T.progress}</option>
+              <option value="In Progress">{T.inProgress}</option>
+              <option value="Action Required">{T.actionRequired}</option>
+              <option value="Completed">{T.completed}</option>
+              <option value="Not Started">{T.notStarted}</option>
             </select>
           </div>
         </div>
@@ -468,8 +571,8 @@ const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLo
         {!loading && !error && (
           <p className="sp-count">
             {activeCategory !== 'All' || search
-              ? `Showing ${filtered.length} result${filtered.length !== 1 ? 's' : ''}`
-              : `${allServices.length} services available`}
+              ? T.showing(filtered.length)
+              : T.available(allServices.length)}
           </p>
         )}
 
@@ -477,7 +580,7 @@ const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLo
         {loading && (
           <div className="sp-loading">
             <Loader2 size={36} className="sp-spinner" />
-            <p>Loading services from Firestore…</p>
+            <p>{T.loading}</p>
           </div>
         )}
 
@@ -486,7 +589,7 @@ const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLo
         {!loading && !error && filtered.length === 0 && (
           <div className="sp-empty">
             <span>😕</span>
-            <p>No services match your search. Try a different keyword or category.</p>
+            <p>{T.empty}</p>
           </div>
         )}
 
@@ -494,7 +597,7 @@ const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLo
         {!loading && !error && (
           <div className="sp-grid">
             {paginated.map((service) => (
-              <ServiceCard key={service.id} service={service} />
+              <ServiceCard key={service.id} service={service} lang={lang} />
             ))}
           </div>
         )}
@@ -503,7 +606,7 @@ const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLo
         {!loading && hasMore && (
           <div className="sp-load-more-wrap">
             <button className="sp-load-more" onClick={() => setPage((p) => p + 1)}>
-              Load more ({filtered.length - paginated.length} remaining)
+              {T.loadMore(filtered.length - paginated.length)}
             </button>
           </div>
         )}

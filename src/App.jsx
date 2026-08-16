@@ -12,6 +12,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState('');
   const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'ai' | 'applications' | 'profile'
   const [aiInitialQuery, setAiInitialQuery] = useState('');
+  const [lang, setLang] = useState('EN');
 
   const handleLogin = (username) => {
     setCurrentUser(username || 'Jason');
@@ -48,6 +49,8 @@ function App() {
           onLogout={handleLogout}
           onNavigate={handleNavigate}
           initialQuery={aiInitialQuery}
+          lang={lang}
+          onLangChange={setLang}
         />
       );
     }
@@ -58,6 +61,8 @@ function App() {
           username={currentUser || 'Jason'}
           onLogout={handleLogout}
           onNavigate={handleNavigate}
+          lang={lang}
+          onLangChange={setLang}
         />
       );
     }
@@ -68,6 +73,8 @@ function App() {
         onLogout={handleLogout}
         onNavigate={handleNavigate}
         onAskAi={handleAskAi}
+        lang={lang}
+        onLangChange={setLang}
       />
     );
   }
