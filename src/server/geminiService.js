@@ -85,14 +85,25 @@ function buildSystemInstruction() {
 Your mission is to provide accurate, up-to-date, step-by-step guidance for Malaysian citizens, residents, and entrepreneurs on all government applications and public services.
 
 CRITICAL INSTRUCTIONS:
-1. ALWAYS identify the exact APPLICATIONS that need to be completed and the specific MALAYSIAN GOVERNMENT AGENCIES involved for each step.
-2. For business inquiries (such as "I want to start a food business" or other enterprises):
-   - Step 1: Business Registration with SSM (Suruhanjaya Syarikat Malaysia - EzBiz Form A/B or MyCoID for Sdn Bhd)
-   - Step 2: Premise & Signboard Licensing with Local Council (PBT - DBKL, MBPJ, MBSA, MBJB, MPKJ, etc.)
-   - Step 3: Food Handler Certification & Typhoid Vaccination with Ministry of Health (KKM - SLPM training + TY2 injection)
-   - Step 4: Halal Certification with JAKIM / JAIN (MYeHALAL portal) - if applicable
-   - Step 5: Tax Registration & e-Invoicing with LHDN (e-Daftar / MyTax)
-   - Step 6: Employer Statutory Contributions (KWSP/EPF, PERKESO/SOCSO, EIS/SIP) - if hiring employees
+1. ALWAYS identify the exact FORMAL APPLICATIONS that need to be submitted to MALAYSIAN GOVERNMENT AGENCIES.
+2. ORCHESTRATE DEPENDENCY-AWARE JOURNEY: When user asks to start a business (e.g. food business), apply for a loan (e.g. PTPTN), apply for housing (e.g. PR1MA), or any multi-step procedure:
+   - Generate a "journey" DAG object.
+   - CRITICAL REQUIREMENT FOR STEPS: Every item in "steps" MUST BE AN OFFICIAL GOVERNMENT APPLICATION / LICENSE SUBMITTED TO AN AGENCY (e.g., "SSM Business Registration", "Local Council Premise & Signboard License", "LHDN Tax File Registration", "JAKIM Halal Certification", "PTPTN Loan Application").
+   - DO NOT create separate roadmap steps for preparation/preliminary tasks (such as opening a bank account, taking a typhoid shot, getting a photo, or attending a course). Instead, place those preparation requirements inside the application's "requires" array and "description" so citizens can see preparation details inside that specific application.
+   - In "steps", explicitly define:
+     * "id": Unique string identifier (e.g. "step-ssm", "step-pbt", "step-lhdn", "step-jakim", "step-ptptn")
+     * "title": Clear application name (e.g. "Local Council (PBT) Premise License")
+     * "agency": Government Agency in charge (e.g. "DBKL / Local Council", "SSM", "PTPTN", "LHDN")
+     * "description": Brief instruction including preparation requirements
+     * "dependencies": Array of prerequisite application step IDs that MUST be completed before this step can start (e.g. ["step-ssm"]).
+     * "canRunParallelWith": Array of step IDs that can be done simultaneously.
+     * "requires": Preparation items, documents, and output numbers needed from prior steps (e.g. ["SSM Registration Number", "Food Handler SLPM Certificate", "Typhoid TY2 Vaccination"]).
+     * "produces": Specific certificates/licenses produced (e.g. ["PBT Premise License Number"]).
+     * "isOnline": true if can be done online.
+     * "submissionType": "online_form" | "external_portal" | "walk_in"
+     * "estimatedDuration": e.g. "24 Hours" or "7 - 14 Days"
+     * "fees": e.g. "RM30 - RM60/year"
+     * "portalUrl": Official verified Malaysian government portal URL
 3. ELIGIBILITY CHECK: Always evaluate and extract the official Malaysian government eligibility requirements for the application into an "eligibility" object so the citizen can check if they qualify.
 4. Structure the content cleanly in Markdown with clear section headings (## and ###), numbered steps (1., 2., 3.), bold text for key terms and fees, and bullet points.
 5. Provide official, verified Malaysian government portal URLs in the actionCards array.
@@ -122,6 +133,33 @@ CRITICAL INSTRUCTIONS:
         "label": "Document / Qualification",
         "requirement": "Specific prerequisite document, income tier, or accreditation",
         "isMandatory": true
+      }
+    ]
+  },
+  "journey": {
+    "id": "journey-unique-id",
+    "title": "Application Journey Title",
+    "summary": "High level roadmap summary",
+    "phases": [
+      { "id": 1, "name": "Phase 1: Foundation & Prerequisites (Parallel)" },
+      { "id": 2, "name": "Phase 2: Premise & Compliance" }
+    ],
+    "steps": [
+      {
+        "id": "step-1",
+        "title": "Step Name",
+        "agency": "Agency Name",
+        "phase": 1,
+        "description": "Brief description",
+        "dependencies": [],
+        "canRunParallelWith": ["step-2"],
+        "requires": ["MyKad"],
+        "produces": ["Certificate or Reference Number"],
+        "isOnline": true,
+        "submissionType": "online_form",
+        "estimatedDuration": "24 Hours",
+        "fees": "RM30",
+        "portalUrl": "https://official.gov.my"
       }
     ]
   },
@@ -166,6 +204,7 @@ function parseGeminiResponse(rawText) {
       suggestions: [],
       checklist: [],
       eligibility: null,
+      journey: null,
     };
   }
 
@@ -180,10 +219,14 @@ function parseGeminiResponse(rawText) {
   // 1. Try standard JSON.parse
   try {
     const parsed = JSON.parse(cleaned);
+    let finalJourney = parsed.journey && typeof parsed.journey === 'object' ? parsed.journey : null;
+    let finalEligibility = parsed.eligibility && typeof parsed.eligibility === 'object' ? parsed.eligibility : null;
+
     return {
       agency: parsed.agency || 'Malaysian Government Public Service',
       content: parsed.content || cleaned,
-      eligibility: parsed.eligibility && typeof parsed.eligibility === 'object' ? parsed.eligibility : null,
+      eligibility: finalEligibility,
+      journey: finalJourney,
       actionCards: Array.isArray(parsed.actionCards) ? parsed.actionCards : [],
       suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
       checklist: Array.isArray(parsed.checklist) ? parsed.checklist : [],
@@ -193,6 +236,7 @@ function parseGeminiResponse(rawText) {
     let agency = 'Malaysian Government Public Service';
     let content = '';
     let eligibility = null;
+    let journey = null;
     const actionCards = [];
     const suggestions = [];
 
@@ -203,23 +247,49 @@ function parseGeminiResponse(rawText) {
     }
 
     // Extract eligibility if present
-    const eligibilityMatch = cleaned.match(/"eligibility"\s*:\s*(\{[\s\S]*?\})\s*,\s*"(?:actionCards|suggestions|checklist|content)/);
+    const eligibilityMatch = cleaned.match(/"eligibility"\s*:\s*(\{[\s\S]*?\})(?=\s*,\s*"(?:journey|actionCards|suggestions|checklist|content|agency)"|\s*\}|\s*$)/);
     if (eligibilityMatch) {
       try {
         eligibility = JSON.parse(eligibilityMatch[1]);
+      } catch (_) {
+        // Try fixing trailing commas or missing closing brace
+        try {
+          eligibility = JSON.parse(eligibilityMatch[1] + '}');
+        } catch (_) {}
+      }
+    }
+
+    // Extract journey if present
+    const journeyMatch = cleaned.match(/"journey"\s*:\s*(\{[\s\S]*?\})(?=\s*,\s*"(?:eligibility|actionCards|suggestions|checklist|content|agency)"|\s*\}|\s*$)/);
+    if (journeyMatch) {
+      try {
+        journey = JSON.parse(journeyMatch[1]);
       } catch (_) {}
     }
 
-    // Extract content
-    const contentMatch = cleaned.match(/"content"\s*:\s*"([\s\S]*?)(?="\s*,\s*"(?:actionCards|suggestions|checklist)|\s*"\}|$)/);
+    // Extract content with all keys in lookahead
+    const contentMatch = cleaned.match(/"content"\s*:\s*"([\s\S]*?)(?="\s*,\s*"(?:eligibility|journey|actionCards|suggestions|checklist|agency)"|\s*"\}|\s*$)/);
     if (contentMatch) {
       content = contentMatch[1]
         .replace(/\\n/g, '\n')
         .replace(/\\"/g, '"')
         .replace(/\\\\/g, '\\');
     } else {
-      // If content key wasn't matched, check if rawText is straight markdown
-      content = cleaned;
+      // If content key wasn't matched directly, strip any outer JSON wrappers
+      content = cleaned
+        .replace(/^\s*\{\s*"agency"[^}]*?"content"\s*:\s*"/i, '')
+        .replace(/"\s*,\s*"(?:eligibility|journey|actionCards|suggestions|checklist)"[\s\S]*$/i, '')
+        .replace(/\\n/g, '\n')
+        .replace(/\\"/g, '"');
+    }
+
+    // Clean any remaining raw JSON leak in content
+    if (content) {
+      content = content
+        .replace(/",\s*"(?:eligibility|journey|actionCards|suggestions|checklist)":\s*[\s\S]*$/i, '')
+        .replace(/\s*"(?:eligibility|journey|actionCards|suggestions|checklist)":\s*\{[\s\S]*$/i, '')
+        .replace(/\s*"(?:eligibility|journey|actionCards|suggestions|checklist)":\s*\[[\s\S]*$/i, '')
+        .trim();
     }
 
     // Extract action cards if present
@@ -242,7 +312,7 @@ function parseGeminiResponse(rawText) {
 
     return {
       agency,
-      content: content || cleaned,
+      content: content || 'Here is the requested information on Malaysian public services.',
       actionCards: actionCards.length > 0 ? actionCards : [
         {
           id: 'act-malaysia-gov',
@@ -255,10 +325,11 @@ function parseGeminiResponse(rawText) {
       suggestions: suggestions.length > 0 ? suggestions : [
         'How do I register a business with SSM?',
         'What licenses are needed from local council?',
-        'How to apply for Halal certification?',
+        'How to apply for PTPTN loan?',
       ],
       checklist: [],
       eligibility,
+      journey,
     };
   }
 }
@@ -333,5 +404,128 @@ export async function askGeminiGovernmentAi(query, history = []) {
     throw new Error('Empty response received from Gemini API');
   }
 
-  return parseGeminiResponse(rawText);
+  const parsedResult = parseGeminiResponse(rawText);
+  return enrichWithCanonicalJourney(parsedResult, query);
+}
+
+/**
+ * Ensures a rich dependency-aware journey is always attached for multi-step applications
+ */
+function enrichWithCanonicalJourney(result, query) {
+  if (result.journey && Array.isArray(result.journey.steps) && result.journey.steps.length > 0) {
+    return result;
+  }
+
+  const q = (query || '').toLowerCase();
+  const c = (result.content || '').toLowerCase();
+
+  if (q.includes('food') || q.includes('makan') || q.includes('restaurant') || q.includes('cafe') || c.includes('ssm') && c.includes('fosim') || c.includes('typhoid')) {
+    result.journey = {
+      id: 'journey-food-biz',
+      title: 'Food & Beverage Business Setup Applications',
+      summary: 'Official agency applications required to legally operate an F&B business in Malaysia.',
+      steps: [
+        {
+          id: 'step-ssm',
+          title: 'SSM Business Registration (EzBiz)',
+          agency: 'Suruhanjaya Syarikat Malaysia (SSM)',
+          description: 'Register trade name and legal business entity to obtain official SSM Registration No. & Borang D/E.',
+          dependencies: [],
+          requires: ['MyKad', 'Proposed Business Name'],
+          produces: ['SSM Registration Number', 'Borang D/E Certificate'],
+          isOnline: true,
+          submissionType: 'online_form',
+          estimatedDuration: '24 Hours',
+          fees: 'RM30 - RM60/year',
+          portalUrl: 'https://ezbiz.ssm.com.my',
+          status: 'ready',
+        },
+        {
+          id: 'step-pbt',
+          title: 'Local Council (PBT) Premise & Signboard License',
+          agency: 'Local Council (DBKL / MBPJ / MBSA / MPKJ)',
+          description: 'Apply for business operating premise license and Malay billboard signboard permit. (Preparation: Food Handler Training SLPM, Typhoid TY2 Injection, and Tenancy Agreement).',
+          dependencies: ['step-ssm'],
+          requires: ['SSM Registration Number', 'Food Handler SLPM Training', 'Typhoid TY2 Vaccine Card', 'Tenancy Agreement'],
+          produces: ['PBT Premise License Number'],
+          isOnline: true,
+          submissionType: 'online_form',
+          estimatedDuration: '7 - 14 Days',
+          fees: 'RM100 - RM500',
+          portalUrl: 'https://dbkl.gov.my',
+          status: 'locked',
+        },
+        {
+          id: 'step-lhdn',
+          title: 'LHDN Tax File & e-Invoicing Registration',
+          agency: 'Lembaga Hasil Dalam Negeri (LHDN)',
+          description: 'Register business income tax file (Form B) and activate MyInvois e-Invoicing compliance.',
+          dependencies: ['step-ssm'],
+          requires: ['SSM Registration Number'],
+          produces: ['Tax Identification Number (TIN)'],
+          isOnline: true,
+          submissionType: 'online_form',
+          estimatedDuration: '1 - 3 Days',
+          fees: 'Free',
+          portalUrl: 'https://mytax.hasil.gov.my',
+          status: 'locked',
+        },
+        {
+          id: 'step-jakim',
+          title: 'JAKIM Halal Certification (MYeHALAL)',
+          agency: 'Department of Islamic Development Malaysia (JAKIM)',
+          description: 'Apply for official Malaysian Halal Certification via MYeHALAL portal.',
+          dependencies: ['step-ssm', 'step-pbt'],
+          requires: ['SSM Registration Number', 'PBT Premise License Number', 'Halal Assurance System & Ingredient Lists'],
+          produces: ['JAKIM Halal Certificate'],
+          isOnline: true,
+          submissionType: 'online_form',
+          estimatedDuration: '30 - 60 Days',
+          fees: 'RM100 - RM400',
+          portalUrl: 'https://myehalal.halal.gov.my',
+          status: 'locked',
+        },
+      ],
+    };
+  } else if (q.includes('ptptn') || q.includes('student loan') || q.includes('study loan')) {
+    result.journey = {
+      id: 'journey-ptptn',
+      title: 'PTPTN Higher Education Financing Applications',
+      summary: 'Official agency applications for higher education financing and graduation benefits.',
+      steps: [
+        {
+          id: 'step-ptptn-app',
+          title: 'PTPTN Higher Education Loan Application',
+          agency: 'Perbadanan Tabung Pendidikan Tinggi Nasional (PTPTN)',
+          description: 'Formal online application for tertiary education financing via MyPTPTN portal. (Preparation: Active Simpan SSPN Account, Panel Bank Account, and IPT Offer Letter).',
+          dependencies: [],
+          requires: ['Simpan SSPN Account', 'Panel Bank Account (Bank Islam / Maybank)', 'IPT Offer Letter', 'Academic Results'],
+          produces: ['PTPTN Loan Reference Number', 'PTPTN Loan Agreement'],
+          isOnline: true,
+          submissionType: 'online_form',
+          estimatedDuration: '7 - 14 Days',
+          fees: 'RM10 Pin Purchase',
+          portalUrl: 'https://myp.ptptn.gov.my',
+          status: 'ready',
+        },
+        {
+          id: 'step-ptptn-exemption',
+          title: 'PTPTN Loan Repayment Exemption (First Class Degree)',
+          agency: 'Perbadanan Tabung Pendidikan Tinggi Nasional (PTPTN)',
+          description: 'Apply for 100% full loan repayment exemption upon graduating with First Class Honours Bachelor Degree.',
+          dependencies: ['step-ptptn-app'],
+          requires: ['PTPTN Loan Reference Number', 'First Class Degree Certificate', 'Official Academic Transcript'],
+          produces: ['Repayment Exemption Approval Letter'],
+          isOnline: true,
+          submissionType: 'online_form',
+          estimatedDuration: '14 - 30 Days',
+          fees: 'Free',
+          portalUrl: 'https://myp.ptptn.gov.my',
+          status: 'locked',
+        },
+      ],
+    };
+  }
+
+  return result;
 }

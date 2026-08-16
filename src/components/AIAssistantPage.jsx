@@ -23,12 +23,21 @@ import {
   Layers,
   ShieldCheck,
   UserCheck,
-  CheckSquare
+  CheckSquare,
+  MapPin,
+  Compass
 } from 'lucide-react';
 import { marked } from 'marked';
 import Navbar from './Navbar';
 import { STARTER_PROMPTS } from './govAiData';
 import { askGovAi } from '../services/aiService';
+import PlanJourneyCard from './PlanJourneyCard';
+import ApplicationSubmissionModal from './ApplicationSubmissionModal';
+import {
+  getAccumulatedArtifacts,
+  saveUserJourney,
+  loadUserJourney
+} from '../services/journeyService';
 import './AIAssistantPage.css';
 
 // Configure marked with GitHub-flavored markdown and line breaks
@@ -51,7 +60,16 @@ marked.use({ renderer });
 const renderMarkdown = (content) => {
   if (!content) return '';
   try {
-    return marked.parse(content);
+    let cleanText = typeof content === 'string' ? content : JSON.stringify(content);
+    // Strip accidental JSON keys leaking into content text
+    cleanText = cleanText
+      .replace(/",\s*"(?:eligibility|journey|actionCards|suggestions|checklist)":\s*[\s\S]*$/i, '')
+      .replace(/\s*"(?:eligibility|journey|actionCards|suggestions|checklist)":\s*\{[\s\S]*$/i, '')
+      .replace(/\s*"(?:eligibility|journey|actionCards|suggestions|checklist)":\s*\[[\s\S]*$/i, '')
+      .replace(/^\s*\{\s*"agency"[^}]*?"content"\s*:\s*"/i, '')
+      .trim();
+
+    return marked.parse(cleanText);
   } catch (err) {
     console.error('Error rendering markdown:', err);
     return content;
@@ -66,6 +84,10 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
   const [feedbackGiven, setFeedbackGiven] = useState({});
   const [checkedCriteria, setCheckedCriteria] = useState({});
+  const [activeJourney, setActiveJourney] = useState(null);
+  const [submittingStep, setSubmittingStep] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [visibleJourneys, setVisibleJourneys] = useState({});
 
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -77,6 +99,56 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
       ...prev,
       [key]: !prev[key],
     }));
+  };
+
+  // Toggle journey visibility for a specific message
+  const handleToggleJourney = (msgId, journeyObj) => {
+    setVisibleJourneys((prev) => ({
+      ...prev,
+      [msgId]: !prev[msgId],
+    }));
+    if (journeyObj) {
+      setActiveJourney(journeyObj);
+    }
+  };
+
+  // Open in-app application submission modal
+  const handleOpenSubmission = (step, journeyObj) => {
+    setSubmittingStep(step);
+    if (journeyObj) {
+      setActiveJourney(journeyObj);
+    }
+    setIsModalOpen(true);
+  };
+
+  // Handle successful application submission
+  const handleSubmitSuccess = (result) => {
+    if (result.updatedJourney) {
+      setActiveJourney(result.updatedJourney);
+    }
+
+    const aiMsgId = 'ai-ack-' + Date.now();
+    const cleanStepTitle = submittingStep?.title || 'Application';
+
+    const ackMessage = {
+      id: aiMsgId,
+      sender: 'ai',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      agency: submittingStep?.agency || 'MyGateway AI Orchestrator',
+      content: `### 🎉 ${cleanStepTitle} Submitted Successfully!\n\nYour application has been registered with official reference ID: **\`${result.referenceNumber}\`**.\n\n✨ **Generated Output Documents**:\n${Object.entries(result.generatedOutputs || {}).filter(([k]) => !k.endsWith('_ref') && !k.endsWith('_submittedAt')).map(([k, v]) => `- **${k.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())}**: \`${v}\``).join('\n')}\n\n🔓 **Downstream Steps Unlocked**: Prerequisite data has been auto-linked. You can now proceed with subsequent applications in your journey below.`,
+      journey: result.updatedJourney,
+      actionCards: [],
+      suggestions: [
+        'What is the next step in my journey?',
+        'How can I view my registered SSM certificate?',
+        'How long does the local council approval take?'
+      ],
+      checklist: [],
+      eligibility: null,
+    };
+
+    setVisibleJourneys((prev) => ({ ...prev, [aiMsgId]: true }));
+    setMessages((prev) => [...prev, ackMessage]);
   };
 
   // Time-based greeting
@@ -138,10 +210,17 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
         agency: responseData.agency,
         content: responseData.content,
         eligibility: responseData.eligibility,
+        journey: responseData.journey,
         actionCards: responseData.actionCards,
         suggestions: responseData.suggestions,
         checklist: responseData.checklist,
       };
+
+      if (responseData.journey) {
+        setActiveJourney(responseData.journey);
+        setVisibleJourneys((prev) => ({ ...prev, [aiMsgId]: true }));
+        saveUserJourney(username || 'guest', responseData.journey.id, responseData.journey);
+      }
 
       setMessages((prev) => [...prev, aiMessage]);
     } catch (err) {
@@ -442,10 +521,32 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
                                     style={{ width: `${(checkedCount / total) * 100}%` }}
                                   />
                                 </div>
+                                {msg.journey && (
+                                  <button
+                                    type="button"
+                                    className="plan-journey-trigger-btn"
+                                    onClick={() => handleToggleJourney(msg.id, msg.journey)}
+                                  >
+                                    <Sparkles size={16} />
+                                    <span>
+                                      {visibleJourneys[msg.id]
+                                        ? 'Hide Application Roadmap'
+                                        : '🚀 Plan Application Journey & Procedures'}
+                                    </span>
+                                  </button>
+                                )}
                               </div>
                             );
                           })()}
                         </div>
+                      )}
+
+                      {/* Interactive Dependency-Aware Plan Journey Card */}
+                      {msg.journey && (visibleJourneys[msg.id] !== false) && (
+                        <PlanJourneyCard
+                          journey={activeJourney && activeJourney.id === msg.journey?.id ? activeJourney : msg.journey}
+                          onStartSubmission={(step) => handleOpenSubmission(step, msg.journey)}
+                        />
                       )}
 
                       {/* Checklist Box if available */}
@@ -635,6 +736,17 @@ const AIAssistantPage = ({ username = 'Jason', onLogout, onNavigate, initialQuer
             </div>
           </div>
         )}
+
+        {/* Application Online Submission Modal */}
+        <ApplicationSubmissionModal
+          isOpen={isModalOpen}
+          step={submittingStep}
+          journey={activeJourney}
+          username={username}
+          accumulatedArtifacts={getAccumulatedArtifacts(activeJourney)}
+          onClose={() => setIsModalOpen(false)}
+          onSubmitSuccess={handleSubmitSuccess}
+        />
 
       </div>
     </div>
