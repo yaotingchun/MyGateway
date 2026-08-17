@@ -796,6 +796,23 @@
   box-shadow: 0 6px 18px rgba(26, 86, 219, 0.38);
 }
 
+.start-app-action-btn.btn-creating {
+  background: #2563eb;
+  opacity: 0.9;
+  cursor: wait;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.spin-icon {
+  animation: spinSlow 1s linear infinite;
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ── Eligibility Check Card ─────────────────────────────────────────────── */
 .ai-eligibility-card {
   margin-top: 14px;

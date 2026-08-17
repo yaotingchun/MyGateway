@@ -31,10 +31,13 @@ import {
   Calendar,
   DollarSign,
   HelpCircle,
-  Info
+  Info,
+  AlertTriangle,
+  Download,
+  Trash2
 } from 'lucide-react';
 import Navbar from './Navbar';
-import ApplicationSubmissionModal from './ApplicationSubmissionModal';
+import ServiceWorkspaceView from './ServiceWorkspaceView';
 import {
   getLocalActiveApplications,
   saveLocalActiveApplications,
@@ -42,6 +45,7 @@ import {
   setSelectedApplicationId,
   updateApplicationEligibility,
   updateApplicationJourney,
+  deleteApplication,
   getAccumulatedArtifacts,
 } from '../services/journeyService';
 import { getProfile, evaluateEligibilityCriteria } from '../utils/profileStore';
@@ -87,7 +91,7 @@ const DEFAULT_SAMPLE_APPS = [
           description: 'Official registration of your enterprise entity name and business type.',
           timeframe: 'Instant (Online via EzBiz)',
           fee: 'RM60 - RM100/year',
-          status: 'pending',
+          status: 'ready_to_apply',
         },
         {
           id: 'step-pbt',
@@ -101,7 +105,7 @@ const DEFAULT_SAMPLE_APPS = [
           description: 'Premise and advertisement signboard operational license issued by the local authority.',
           timeframe: '7 - 14 Working Days',
           fee: 'RM150 - RM800 depending on location/size',
-          status: 'pending',
+          status: 'locked',
         },
         {
           id: 'step-lhdn',
@@ -115,7 +119,7 @@ const DEFAULT_SAMPLE_APPS = [
           description: 'Register enterprise income tax file and e-invoicing compliance portal.',
           timeframe: '1 - 3 Working Days',
           fee: 'Free',
-          status: 'pending',
+          status: 'locked',
         },
         {
           id: 'step-jakim',
@@ -129,7 +133,7 @@ const DEFAULT_SAMPLE_APPS = [
           description: 'Official national halal compliance verification for food preparation and dining premises.',
           timeframe: '30 Working Days',
           fee: 'RM200 - RM400',
-          status: 'pending',
+          status: 'locked',
         }
       ]
     }
@@ -188,7 +192,7 @@ const DEFAULT_SAMPLE_APPS = [
           description: 'Submit formal financing application matching institutional intake schedule.',
           timeframe: '5 - 7 Working Days',
           fee: 'RM5 Pin / Free online',
-          status: 'pending',
+          status: 'ready_to_apply',
         },
         {
           id: 'step-agreement',
@@ -202,7 +206,7 @@ const DEFAULT_SAMPLE_APPS = [
           description: 'Official digital stamping and contract signing to initiate semester tuition disbursements.',
           timeframe: '3 Working Days',
           fee: 'RM20 Stamping',
-          status: 'pending',
+          status: 'locked',
         }
       ]
     }
@@ -226,12 +230,18 @@ const ApplicationsPage = ({
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'in_progress' | 'eligible' | 'completed'
   const [citizenProfile, setCitizenProfile] = useState(null);
 
-  // Stepper Timeline Active Step Index (0: Eligibility, 1: Step 1, 2: Step 2, ...)
-  const [activeStepIndex, setActiveStepIndex] = useState(0);
+  // Main 3-stage timeline stepper (0: Eligibility Check, 1: Services & Application, 2: Completed)
+  const [currentStage, setCurrentStage] = useState(0);
 
-  // Modal submission state
-  const [submittingStep, setSubmittingStep] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Selected Service for Workspace Modal
+  const [selectedService, setSelectedService] = useState(null);
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+
+  // Services filter inside Step 2
+  const [servicesFilter, setServicesFilter] = useState('all'); // 'all' | 'processable' | 'completed' | 'locked'
+
+  // Application Delete Confirmation State
+  const [appToDelete, setAppToDelete] = useState(null);
 
   // Load citizen profile and applications
   useEffect(() => {
@@ -258,7 +268,7 @@ const ApplicationsPage = ({
         setSelectedAppId(found.id);
         setActiveApp(found);
         setViewMode('details');
-        initActiveStep(found);
+        determineInitialStage(found);
         return;
       }
     }
@@ -266,25 +276,49 @@ const ApplicationsPage = ({
     if (apps.length > 0) {
       setSelectedAppId(apps[0].id);
       setActiveApp(apps[0]);
-      initActiveStep(apps[0]);
+      determineInitialStage(apps[0]);
     }
   };
 
-  // Determine initial active step index based on progress
-  const initActiveStep = (app) => {
+  // Prompt delete application confirmation
+  const handlePromptDelete = (app) => {
+    setAppToDelete(app);
+  };
+
+  // Confirm and execute application deletion
+  const handleConfirmDelete = async () => {
+    if (!appToDelete) return;
+    const updated = await deleteApplication(username, appToDelete.id);
+    setApplications(updated);
+
+    if (activeApp?.id === appToDelete.id) {
+      if (updated.length > 0) {
+        setActiveApp(updated[0]);
+        setSelectedAppId(updated[0].id);
+        determineInitialStage(updated[0]);
+      } else {
+        setActiveApp(null);
+        setSelectedAppId(null);
+      }
+      setViewMode('list');
+    }
+    setAppToDelete(null);
+  };
+
+  // Determine stage based on application state
+  const determineInitialStage = (app) => {
     if (!app) return;
     if (!app.eligibility?.isEligible) {
-      setActiveStepIndex(0);
+      setCurrentStage(0); // Stage 1: Eligibility Check
       return;
     }
 
     const steps = app.journey?.steps || [];
-    const firstPendingIdx = steps.findIndex((s) => s.status !== 'completed');
-    if (firstPendingIdx !== -1) {
-      setActiveStepIndex(firstPendingIdx + 1);
+    const allDone = steps.length > 0 && steps.every((s) => s.status === 'completed');
+    if (allDone) {
+      setCurrentStage(2); // Stage 3: Completed
     } else {
-      // All completed
-      setActiveStepIndex(steps.length);
+      setCurrentStage(1); // Stage 2: Services & Application
     }
   };
 
@@ -314,7 +348,7 @@ const ApplicationsPage = ({
     setActiveApp(app);
     setSelectedApplicationId(app.id);
     setViewMode('details');
-    initActiveStep(app);
+    determineInitialStage(app);
   };
 
   // Back to list of applications
@@ -350,7 +384,7 @@ const ApplicationsPage = ({
     }
   };
 
-  // Confirm eligibility and automatically unlock Step 1
+  // Confirm eligibility and automatically unlock Stage 1 (Services & Application)
   const handleConfirmEligibility = async () => {
     if (!activeApp) return;
 
@@ -371,42 +405,91 @@ const ApplicationsPage = ({
       setApplications((prev) =>
         prev.map((a) => (a.id === updatedApp.id ? updatedApp : a))
       );
-      // Automatically advance to Step 1 (First Agency application)
-      setActiveStepIndex(1);
+      // Advance to Services & Application stage
+      setCurrentStage(1);
     }
   };
 
-  // Open in-app submission modal for a step
-  const handleOpenSubmission = (step) => {
-    setSubmittingStep(step);
-    setIsModalOpen(true);
+  // Open Service Workspace (Full page transition, no popout modal)
+  const handleOpenWorkspace = (service) => {
+    setSelectedService(service);
+    setViewMode('service');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Handle submission success
-  const handleSubmitSuccess = async (result) => {
-    if (result.updatedJourney && activeApp) {
-      const updated = await updateApplicationJourney(
-        username,
-        activeApp.id,
-        result.updatedJourney
-      );
-      if (updated) {
-        setActiveApp(updated);
-        setApplications((prev) =>
-          prev.map((a) => (a.id === updated.id ? updated : a))
-        );
+  // Return from Service Workspace to Details view
+  const handleBackFromService = () => {
+    setViewMode('details');
+    setSelectedService(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-        // Advance to next step in timeline if available
-        const currentSteps = updated.journey?.steps || [];
-        const nextPendingIdx = currentSteps.findIndex((s) => s.status !== 'completed');
-        if (nextPendingIdx !== -1) {
-          setActiveStepIndex(nextPendingIdx + 1);
-        } else {
-          setActiveStepIndex(currentSteps.length);
-        }
+  // Update Service Status from Workspace (e.g. Completed, Processing, Review Required, Rejected)
+  const handleUpdateServiceStatus = async (serviceId, newStatus, submissionData) => {
+    if (!activeApp?.journey?.steps) return;
+
+    const steps = [...activeApp.journey.steps];
+    const targetIdx = steps.findIndex((s) => s.id === serviceId);
+    if (targetIdx === -1) return;
+
+    const completedIds = steps
+      .filter((s, idx) => idx !== targetIdx && s.status === 'completed')
+      .map((s) => s.id);
+
+    if (newStatus === 'completed') {
+      completedIds.push(serviceId);
+    }
+
+    // Update target step
+    steps[targetIdx] = {
+      ...steps[targetIdx],
+      status: newStatus,
+      submissionRecord: submissionData || steps[targetIdx].submissionRecord,
+      submissionOutput: submissionData?.output || steps[targetIdx].submissionOutput,
+    };
+
+    // Update dependency lock status for all other steps
+    const refreshedSteps = steps.map((st) => {
+      if (st.status === 'completed') return st;
+
+      const deps = st.dependencies || [];
+      const depsMet = deps.every((d) => completedIds.includes(d));
+
+      if (!depsMet) {
+        return { ...st, status: 'locked' };
+      } else if (st.status === 'locked') {
+        return { ...st, status: 'ready_to_apply' };
       }
+      return st;
+    });
+
+    const updatedJourney = {
+      ...activeApp.journey,
+      steps: refreshedSteps
+    };
+
+    const updatedApp = await updateApplicationJourney(
+      username,
+      activeApp.id,
+      updatedJourney
+    );
+
+    if (updatedApp) {
+      setActiveApp(updatedApp);
+      setApplications((prev) =>
+        prev.map((a) => (a.id === updatedApp.id ? updatedApp : a))
+      );
+
+      // Check if all steps are now completed
+      const allCompleted = refreshedSteps.every((s) => s.status === 'completed');
+      if (allCompleted) {
+        setCurrentStage(2); // Advance to Completed
+      }
+
+      // Update selectedService reference if modal is open
+      const updatedTarget = refreshedSteps.find((s) => s.id === serviceId);
+      if (updatedTarget) setSelectedService(updatedTarget);
     }
-    setIsModalOpen(false);
   };
 
   // Helper stats calculation
@@ -417,7 +500,7 @@ const ApplicationsPage = ({
     return acc + steps.filter((s) => s.status === 'completed').length;
   }, 0);
 
-  // Filtered applications list
+  // Filtered applications list (for viewMode === 'list')
   const filteredApps = applications.filter((app) => {
     const matchesSearch =
       app.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -446,67 +529,74 @@ const ApplicationsPage = ({
     activeApp?.eligibility?.isEligible ||
     (checkedCount === criteriaList.length && criteriaList.length > 0);
 
-  const activeSteps = activeApp?.journey?.steps || [];
+  const rawSteps = activeApp?.journey?.steps || [];
+  const completedServicesCount = rawSteps.filter((s) => s.status === 'completed').length;
+  const allServicesCompleted = rawSteps.length > 0 && completedServicesCount === rawSteps.length;
 
-  // Build the complete array of timeline nodes
-  const timelineNodes = useMemo(() => {
-    if (!activeApp) return [];
+  // Smart Sorting for Services in Stage 1:
+  // 1. Processable / In Progress (Review Required, Ready, Processing, Rejected) on TOP
+  // 2. Completed in Middle
+  // 3. Locked (dependencies not met) on BOTTOM
+  const sortedServices = useMemo(() => {
+    if (!rawSteps || rawSteps.length === 0) return [];
 
-    const nodes = [
-      {
-        index: 0,
-        type: 'eligibility',
-        title: 'Eligibility Check',
-        shortTitle: 'Eligibility',
-        icon: <Search size={18} />,
-        isCompleted: isFullyEligible,
-        isUnlocked: true,
+    const getPriority = (status) => {
+      switch (status) {
+        case 'review_required': return 1;
+        case 'ready_to_apply':
+        case 'pending': return 2;
+        case 'processing': return 3;
+        case 'rejected': return 4;
+        case 'completed': return 5;
+        case 'locked': return 6;
+        default: return 3;
       }
-    ];
+    };
 
-    activeSteps.forEach((step, idx) => {
-      // Step is unlocked if eligibility is done AND all previous steps are completed
-      let unlocked = isFullyEligible;
-      for (let i = 0; i < idx; i++) {
-        if (activeSteps[i].status !== 'completed') {
-          unlocked = false;
-          break;
-        }
-      }
+    return [...rawSteps].sort((a, b) => getPriority(a.status) - getPriority(b.status));
+  }, [rawSteps]);
 
-      let stepIcon = <Briefcase size={18} />;
-      const agencyName = (step.agency || '').toLowerCase();
-      const titleLower = (step.title || '').toLowerCase();
+  // Filtered services inside Stage 1
+  const displayedServices = sortedServices.filter((s) => {
+    if (servicesFilter === 'processable') {
+      return s.status === 'ready_to_apply' || s.status === 'pending' || s.status === 'processing' || s.status === 'review_required' || s.status === 'rejected';
+    }
+    if (servicesFilter === 'completed') {
+      return s.status === 'completed';
+    }
+    if (servicesFilter === 'locked') {
+      return s.status === 'locked';
+    }
+    return true;
+  });
 
-      if (agencyName.includes('ssm') || titleLower.includes('ssm')) {
-        stepIcon = <Briefcase size={18} />;
-      } else if (agencyName.includes('council') || agencyName.includes('pbt') || titleLower.includes('premise')) {
-        stepIcon = <Building2 size={18} />;
-      } else if (agencyName.includes('lhdn') || titleLower.includes('tax') || agencyName.includes('sspn')) {
-        stepIcon = <Rocket size={18} />;
-      } else if (agencyName.includes('jakim') || titleLower.includes('halal')) {
-        stepIcon = <Award size={18} />;
-      } else if (agencyName.includes('ptptn')) {
-        stepIcon = <GraduationCap size={18} />;
-      }
-
-      nodes.push({
-        index: idx + 1,
-        type: 'agency_step',
-        stepData: step,
-        title: step.title,
-        shortTitle: step.agency.split('(')[0].trim().replace('Suruhanjaya Syarikat Malaysia', 'SSM').replace('Lembaga Hasil Dalam Negeri', 'LHDN').replace('Department of Islamic Development Malaysia', 'JAKIM'),
-        icon: stepIcon,
-        isCompleted: step.status === 'completed',
-        isUnlocked: unlocked,
-      });
-    });
-
-    return nodes;
-  }, [activeApp, isFullyEligible, activeSteps]);
-
-  // Current active node data
-  const currentNode = timelineNodes[activeStepIndex] || timelineNodes[0];
+  // 3 Main Stepper Timeline Stages Configuration
+  const mainTimelineStages = [
+    {
+      index: 0,
+      title: 'Eligibility Check',
+      shortTitle: 'Eligibility Check',
+      icon: <Search size={18} />,
+      isCompleted: isFullyEligible,
+      isUnlocked: true,
+    },
+    {
+      index: 1,
+      title: 'Services & Application',
+      shortTitle: 'Services & Application',
+      icon: <Building2 size={18} />,
+      isCompleted: allServicesCompleted,
+      isUnlocked: isFullyEligible,
+    },
+    {
+      index: 2,
+      title: 'Completed',
+      shortTitle: 'Completed',
+      icon: <Award size={18} />,
+      isCompleted: allServicesCompleted,
+      isUnlocked: allServicesCompleted,
+    }
+  ];
 
   return (
     <div className="apps-page-root">
@@ -533,15 +623,15 @@ const ApplicationsPage = ({
                 <div>
                   <div className="apps-category-badge">
                     <Sparkles size={14} />
-                    <span>{isMalay ? 'Pusat Permohonan Kerajaan' : 'Application History & Orchestrator'}</span>
+                    <span>{isMalay ? 'Pusat Permohonan Kerajaan' : 'Applications Hub'}</span>
                   </div>
                   <h1 className="apps-page-title">
                     {isMalay ? 'Sejarah Permohonan Saya' : 'My Application History'}
                   </h1>
                   <p className="apps-page-subtitle">
                     {isMalay
-                      ? 'Semak status permohonan dan teruskan langkah seterusnya dalam garis masa permohonan.'
-                      : 'Track all your government submissions and complete sequential step-by-step procedures.'}
+                      ? 'Semak status permohonan, semakan kelayakan, dan teruskan modul permohonan agensi.'
+                      : 'Track all your government submissions and complete required agency services.'}
                   </p>
                 </div>
 
@@ -552,7 +642,7 @@ const ApplicationsPage = ({
                   title="Start a new application journey with AI Assistant"
                 >
                   <Plus size={16} />
-                  <span>{isMalay ? 'Bina Permohonan dengan AI' : '+ Start New Application with AI'}</span>
+                  <span>{isMalay ? 'Bina Permohonan dengan AI' : 'Start New Application with AI'}</span>
                 </button>
               </div>
 
@@ -584,7 +674,7 @@ const ApplicationsPage = ({
                   </div>
                   <div className="stat-content">
                     <span className="stat-value">{completedStepsCount}</span>
-                    <span className="stat-label">Agency Submissions Done</span>
+                    <span className="stat-label">Agency Services Done</span>
                   </div>
                 </div>
               </div>
@@ -627,9 +717,15 @@ const ApplicationsPage = ({
               <div className="apps-history-list">
                 {filteredApps.length === 0 ? (
                   <div className="apps-empty-state">
-                    <FolderOpen size={48} className="empty-icon" />
+                    <div className="empty-icon-circle">
+                      <FolderOpen size={36} />
+                    </div>
                     <h3>No applications found</h3>
-                    <p>Try clearing your search filters or start a new application journey with the AI Assistant.</p>
+                    <p>
+                      {searchQuery || statusFilter !== 'all'
+                        ? 'No applications match your current search filters. Try clearing your filters.'
+                        : 'You currently have no active applications. Start a new application journey with the AI Assistant to get guided step-by-step assistance.'}
+                    </p>
                     <button
                       type="button"
                       className="start-ai-app-btn"
@@ -700,7 +796,7 @@ const ApplicationsPage = ({
                           <div className="app-step-progress-box">
                             <div className="step-progress-labels">
                               <span className="step-count-text">
-                                {doneCount} of {totalSteps} Steps Done
+                                {doneCount} of {totalSteps} Services Done
                               </span>
                               <span className="step-percent-text">
                                 {Math.round((doneCount / (totalSteps || 1)) * 100)}%
@@ -714,17 +810,31 @@ const ApplicationsPage = ({
                             </div>
                           </div>
 
-                          <button
-                            type="button"
-                            className="view-details-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenDetails(app);
-                            }}
-                          >
-                            <span>Open Journey</span>
-                            <ChevronRight size={16} />
-                          </button>
+                          <div className="app-card-actions-row">
+                            <button
+                              type="button"
+                              className="delete-app-card-btn"
+                              title="Delete Application"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePromptDelete(app);
+                              }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+
+                            <button
+                              type="button"
+                              className="view-details-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDetails(app);
+                              }}
+                            >
+                              <span>Open Journey</span>
+                              <ChevronRight size={16} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -736,7 +846,7 @@ const ApplicationsPage = ({
           )}
 
           {/* ════════════════════════════════════════════════════════════════════
-              VIEW 2: APPLICATION DETAILS (HORIZONTAL TIMELINE + FOCUSED STEP)
+              VIEW 2: APPLICATION DETAILS (3-STAGE TIMELINE + SERVICES MODULE)
              ════════════════════════════════════════════════════════════════════ */}
           {viewMode === 'details' && activeApp && (
             <div className="apps-details-view">
@@ -753,6 +863,15 @@ const ApplicationsPage = ({
                 </button>
 
                 <div className="details-nav-right">
+                  <button
+                    type="button"
+                    className="delete-app-header-btn"
+                    title="Delete this application"
+                    onClick={() => handlePromptDelete(activeApp)}
+                  >
+                    <Trash2 size={14} />
+                    <span>Delete Application</span>
+                  </button>
                   <span className="details-app-id">{activeApp.id}</span>
                 </div>
               </div>
@@ -764,7 +883,7 @@ const ApplicationsPage = ({
                     <span className="app-ref-id">{activeApp.id}</span>
                     <span className="app-created-date">
                       <Clock size={13} />
-                      <span>Started {new Date(activeApp.createdAt).toLocaleDateString()}</span>
+                      <span>Created {new Date(activeApp.createdAt).toLocaleDateString()}</span>
                     </span>
                   </div>
                   <h2 className="active-app-heading">{activeApp.title}</h2>
@@ -773,24 +892,25 @@ const ApplicationsPage = ({
               </div>
 
               {/* ════════════════════════════════════════════════════════════════
-                  HORIZONTAL CONNECTED STEPPER TIMELINE (MATCHING REFERENCE IMAGE)
+                  MAIN 3-STAGE HORIZONTAL TIMELINE STEPPER
+                  [1. Eligibility Check] ──── [2. Services & Application] ──── [3. Completed]
                  ════════════════════════════════════════════════════════════════ */}
               <div className="horizontal-timeline-container">
                 <div className="timeline-stepper-track">
-                  {timelineNodes.map((node, i) => {
-                    const isSelected = activeStepIndex === node.index;
-                    const isUnlocked = node.isUnlocked;
-                    const isCompleted = node.isCompleted;
-                    const hasNext = i < timelineNodes.length - 1;
+                  {mainTimelineStages.map((stage, i) => {
+                    const isSelected = currentStage === stage.index;
+                    const isUnlocked = stage.isUnlocked;
+                    const isCompleted = stage.isCompleted;
+                    const hasNext = i < mainTimelineStages.length - 1;
 
                     return (
-                      <React.Fragment key={node.index}>
-                        {/* Stepper Node Item */}
+                      <React.Fragment key={stage.index}>
+                        {/* Stepper Node */}
                         <div
                           className={`timeline-step-node ${isSelected ? 'node-selected' : ''} ${isCompleted ? 'node-completed' : ''} ${!isUnlocked ? 'node-locked' : 'node-unlocked'}`}
                           onClick={() => {
                             if (isUnlocked) {
-                              setActiveStepIndex(node.index);
+                              setCurrentStage(stage.index);
                             }
                           }}
                         >
@@ -800,19 +920,19 @@ const ApplicationsPage = ({
                             ) : !isUnlocked ? (
                               <Lock size={16} className="node-icon-locked" />
                             ) : (
-                              node.icon
+                              stage.icon
                             )}
                           </div>
 
                           <div className="node-label-wrap">
-                            <span className="node-step-num">Step {node.index + 1}</span>
-                            <span className="node-step-title">{node.shortTitle || node.title}</span>
+                            <span className="node-step-num">Step {stage.index + 1}</span>
+                            <span className="node-step-title">{stage.shortTitle}</span>
                           </div>
                         </div>
 
                         {/* Connecting Line Segment with Milestone Dots */}
                         {hasNext && (
-                          <div className={`timeline-connector-segment ${timelineNodes[i + 1]?.isUnlocked ? 'segment-active' : 'segment-locked'}`}>
+                          <div className={`timeline-connector-segment ${mainTimelineStages[i + 1]?.isUnlocked ? 'segment-active' : 'segment-locked'}`}>
                             <span className="segment-micro-dot"></span>
                             <div className="segment-line-fill"></div>
                             <span className="segment-micro-dot"></span>
@@ -825,11 +945,9 @@ const ApplicationsPage = ({
               </div>
 
               {/* ════════════════════════════════════════════════════════════════
-                  FOCUSED STEP CONTENT (ONLY RENDERING THE ACTIVE / UNLOCKED STEP)
+                  STAGE 0: ELIGIBILITY CHECK
                  ════════════════════════════════════════════════════════════════ */}
-
-              {/* STEP 0: ELIGIBILITY CHECK */}
-              {activeStepIndex === 0 && (
+              {currentStage === 0 && (
                 <section className="phase-section phase-focused-step">
                   <div className="phase-header">
                     <div className="phase-title-wrap">
@@ -914,16 +1032,16 @@ const ApplicationsPage = ({
                         className="confirm-eligibility-btn"
                         onClick={handleConfirmEligibility}
                       >
-                        <span>Confirm Eligibility & Unlock Step 2</span>
+                        <span>Confirm Eligibility & Unlock Services Module</span>
                         <ArrowRight size={16} />
                       </button>
                     ) : (
                       <button
                         type="button"
                         className="proceed-next-step-btn"
-                        onClick={() => setActiveStepIndex(1)}
+                        onClick={() => setCurrentStage(1)}
                       >
-                        <span>Proceed to Next Step</span>
+                        <span>Proceed to Services & Application</span>
                         <ArrowRight size={16} />
                       </button>
                     )}
@@ -931,158 +1049,335 @@ const ApplicationsPage = ({
                 </section>
               )}
 
-              {/* AGENCY STEPS (STEP 1, 2, 3, ...) */}
-              {activeStepIndex > 0 && currentNode.stepData && (
-                <section className="phase-section phase-focused-step">
-                  <div className="phase-header">
-                    <div className="phase-title-wrap">
-                      <div className={`phase-icon-badge ${currentNode.isCompleted ? 'icon-badge-success' : 'icon-badge-pending'}`}>
-                        {currentNode.icon}
+              {/* ════════════════════════════════════════════════════════════════
+                  STAGE 1: SERVICES & APPLICATION MODULE
+                  (Processable on top, Locked on bottom, Process phases)
+                 ════════════════════════════════════════════════════════════════ */}
+              {currentStage === 1 && (
+                <section className="phase-section services-module-section">
+                  {/* Module Header */}
+                  <div className="services-module-header">
+                    <div className="services-header-info">
+                      <div className="services-icon-pill">
+                        <Building2 size={20} />
                       </div>
                       <div>
-                        <span className="step-agency-tag">{currentNode.stepData.agency}</span>
-                        <h3 className="phase-title">
-                          Step {activeStepIndex + 1}: {currentNode.stepData.title}
-                        </h3>
-                        <p className="phase-subtitle">
-                          {currentNode.stepData.description}
+                        <h3 className="services-module-title">Step 2: Services & Application Hub</h3>
+                        <p className="services-module-subtitle">
+                          Complete all required agency services below. Ready and in-progress applications are sorted on top. Click any service to open its workspace.
                         </p>
                       </div>
                     </div>
 
-                    {currentNode.isCompleted && (
-                      <span className="eligible-confirmed-badge">
-                        <CheckCircle2 size={15} />
-                        <span>Submitted & Completed</span>
+                    {/* Progress Summary Pill */}
+                    <div className="services-overall-progress">
+                      <span className="progress-pill-label">
+                        {completedServicesCount} of {rawSteps.length} Services Completed
                       </span>
-                    )}
-                  </div>
-
-                  {/* Agency Card Details */}
-                  <div className="agency-step-details-grid">
-                    {/* Requirements / Documents Needed */}
-                    <div className="step-info-card">
-                      <div className="info-card-header">
-                        <FileText size={16} />
-                        <h4>Prerequisites & Required Documents</h4>
+                      <div className="services-progress-track">
+                        <div
+                          className="services-progress-fill"
+                          style={{ width: `${(completedServicesCount / (rawSteps.length || 1)) * 100}%` }}
+                        />
                       </div>
-                      <ul className="info-items-list">
-                        {currentNode.stepData.requires?.map((req, rIdx) => (
-                          <li key={rIdx}>
-                            <Check size={14} className="list-check-icon" />
-                            <span>{req}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Deliverables / What this Step Produces */}
-                    <div className="step-info-card info-card-produces">
-                      <div className="info-card-header">
-                        <Award size={16} />
-                        <h4>Official Documents Produced</h4>
-                      </div>
-                      <ul className="info-items-list">
-                        {currentNode.stepData.produces?.map((prod, pIdx) => (
-                          <li key={pIdx}>
-                            <Sparkles size={14} className="list-sparkle-icon" />
-                            <span>{prod}</span>
-                          </li>
-                        ))}
-                      </ul>
                     </div>
                   </div>
 
-                  {/* Processing Time & Government Fee Bar */}
-                  <div className="step-meta-strip">
-                    <div className="meta-strip-item">
-                      <Clock size={16} />
-                      <span className="meta-label">Processing Time:</span>
-                      <span className="meta-val">{currentNode.stepData.timeframe || 'Instant / 1-3 Days'}</span>
-                    </div>
-
-                    <div className="meta-strip-item">
-                      <Wallet size={16} />
-                      <span className="meta-label">Fee:</span>
-                      <span className="meta-val">{currentNode.stepData.fee || 'Free'}</span>
-                    </div>
-
-                    <div className="meta-strip-item">
-                      <Building2 size={16} />
-                      <span className="meta-label">Channel:</span>
-                      <span className="meta-val">{currentNode.stepData.isDigital ? '100% Online via MyGateway' : 'Counter Submission'}</span>
+                  {/* Filter Toolbar */}
+                  <div className="services-filter-toolbar">
+                    <div className="services-filter-buttons">
+                      <button
+                        type="button"
+                        className={`s-filter-btn ${servicesFilter === 'all' ? 'active' : ''}`}
+                        onClick={() => setServicesFilter('all')}
+                      >
+                        All Services ({rawSteps.length})
+                      </button>
+                      <button
+                        type="button"
+                        className={`s-filter-btn ${servicesFilter === 'processable' ? 'active' : ''}`}
+                        onClick={() => setServicesFilter('processable')}
+                      >
+                        ⚡ Processable / Active ({rawSteps.filter((s) => s.status !== 'locked' && s.status !== 'completed').length})
+                      </button>
+                      <button
+                        type="button"
+                        className={`s-filter-btn ${servicesFilter === 'completed' ? 'active' : ''}`}
+                        onClick={() => setServicesFilter('completed')}
+                      >
+                        ✔ Completed ({completedServicesCount})
+                      </button>
+                      <button
+                        type="button"
+                        className={`s-filter-btn ${servicesFilter === 'locked' ? 'active' : ''}`}
+                        onClick={() => setServicesFilter('locked')}
+                      >
+                        🔒 Locked ({rawSteps.filter((s) => s.status === 'locked').length})
+                      </button>
                     </div>
                   </div>
 
-                  {/* Submission Status or Action Button */}
-                  {currentNode.isCompleted ? (
-                    <div className="step-completed-banner">
-                      <div className="completed-banner-left">
-                        <CheckCircle2 size={24} className="banner-success-icon" />
-                        <div>
-                          <h4>Application Successfully Registered!</h4>
-                          {currentNode.stepData.submissionRecord?.referenceNumber && (
-                            <p>Official Reference ID: <strong><code>{currentNode.stepData.submissionRecord.referenceNumber}</code></strong></p>
-                          )}
-                          {currentNode.stepData.submissionOutput && (
-                            <div className="output-tags-row">
-                              {Object.entries(currentNode.stepData.submissionOutput).map(([k, v]) => (
-                                <span key={k} className="output-pill">
-                                  <strong>{k.replace(/([A-Z])/g, ' $1')}:</strong> {v}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                  {/* Services List (Smart Sorted: Processable on Top, Locked on Bottom) */}
+                  <div className="services-cards-grid">
+                    {displayedServices.map((service, sIdx) => {
+                      const isLocked = service.status === 'locked';
+                      const isCompleted = service.status === 'completed';
+                      const isProcessing = service.status === 'processing';
+                      const isReview = service.status === 'review_required';
+                      const isRejected = service.status === 'rejected';
 
-                      {activeStepIndex < timelineNodes.length - 1 && (
-                        <button
-                          type="button"
-                          className="proceed-next-step-btn"
-                          onClick={() => setActiveStepIndex(activeStepIndex + 1)}
+                      // Find missing dependency titles for locked services
+                      const missingDepTitles = (service.dependencies || [])
+                        .map((depId) => rawSteps.find((st) => st.id === depId)?.title || depId)
+                        .join(', ');
+
+                      return (
+                        <div
+                          key={service.id || sIdx}
+                          className={`service-item-card ${isLocked ? 'card-locked' : 'card-unlocked'} ${isCompleted ? 'card-completed' : ''} ${isReview ? 'card-review' : ''}`}
+                          onClick={() => {
+                            if (!isLocked) {
+                              handleOpenWorkspace(service);
+                            }
+                          }}
                         >
-                          <span>Proceed to Next Step</span>
-                          <ArrowRight size={16} />
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="step-action-footer">
-                      <div className="action-footer-text">
-                        <Info size={16} />
-                        <span>Ready to submit? Fill in the details to generate official registration documents.</span>
+                          <div className="service-card-main">
+                            {/* Top Meta Bar */}
+                            <div className="service-card-top">
+                              <div className="service-agency-wrap">
+                                <span className="service-agency-name">{service.agency}</span>
+                              </div>
+                            </div>
+
+                            {/* Service Title & Description */}
+                            <h4 className="service-item-title">{service.title}</h4>
+                            <p className="service-item-desc">{service.description}</p>
+
+                            {/* Prerequisite Requirement Notice */}
+                            {isLocked && missingDepTitles && (
+                              <div className="service-locked-notice">
+                                <Lock size={13} />
+                                <span>Locked: Requires <strong>{missingDepTitles}</strong> to be completed first.</span>
+                              </div>
+                            )}
+
+                            {/* Review Note */}
+                            {isReview && (
+                              <div className="service-review-notice">
+                                <AlertTriangle size={13} />
+                                <span>Action needed: Agency officer requested additional information. Click to open workspace.</span>
+                              </div>
+                            )}
+
+                            {/* Reference Number if Completed */}
+                            {isCompleted && service.submissionRecord?.referenceNumber && (
+                              <div className="service-completed-ref">
+                                <Check size={13} />
+                                <span>Official Ref ID: <strong><code>{service.submissionRecord.referenceNumber}</code></strong></span>
+                              </div>
+                            )}
+
+                            {/* Bottom Meta Tags (Timeframe & Fee) */}
+                            <div className="service-bottom-tags">
+                              <span className="service-tag-item">
+                                <Clock size={12} />
+                                <span>{service.timeframe || '1-3 Days'}</span>
+                              </span>
+                              <span className="service-tag-item">
+                                <Wallet size={12} />
+                                <span>{service.fee || 'Free'}</span>
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Right Action Button */}
+                          <div className="service-card-action">
+                            {isLocked ? (
+                              <button
+                                type="button"
+                                className="open-workspace-btn btn-locked-disabled"
+                                disabled
+                                title="This service is locked until prerequisites are completed."
+                              >
+                                <Lock size={15} />
+                                <span>Locked</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className={`open-workspace-btn ${isCompleted ? 'btn-view-doc' : isReview ? 'btn-open-review' : isProcessing ? 'btn-processing' : 'btn-open-active'}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenWorkspace(service);
+                                }}
+                              >
+                                {isProcessing && <RefreshCw size={14} className="spin-icon" />}
+                                {isCompleted && <CheckCircle2 size={15} />}
+                                <span>
+                                  {isCompleted
+                                    ? 'View Workspace'
+                                    : isReview
+                                    ? 'Resolve Review'
+                                    : isProcessing
+                                    ? 'Processing'
+                                    : isRejected
+                                    ? 'Resubmit Application'
+                                    : 'Open Workspace'}
+                                </span>
+                                {!isProcessing && <ChevronRight size={16} />}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Bottom Advancement to Step 3 */}
+                  {allServicesCompleted && (
+                    <div className="services-all-completed-footer">
+                      <div className="all-completed-text">
+                        <Sparkles size={20} className="sparkle-gold" />
+                        <div>
+                          <h4>All Required Agency Applications Completed!</h4>
+                          <p>All licenses, certificates, and tax registrations are verified and approved.</p>
+                        </div>
                       </div>
 
                       <button
                         type="button"
-                        className="start-submission-action-btn"
-                        onClick={() => handleOpenSubmission(currentNode.stepData)}
+                        className="proceed-next-step-btn"
+                        onClick={() => setCurrentStage(2)}
                       >
-                        <Rocket size={16} />
-                        <span>Submit Application Online</span>
+                        <span>View Final Summary & Records</span>
+                        <ArrowRight size={16} />
                       </button>
                     </div>
                   )}
                 </section>
               )}
 
+              {/* ════════════════════════════════════════════════════════════════
+                  STAGE 2: COMPLETED DOSSIER & RECORDS
+                 ════════════════════════════════════════════════════════════════ */}
+              {currentStage === 2 && (
+                <section className="phase-section phase-completed-section">
+                  <div className="completed-summary-hero">
+                    <div className="completed-trophy-circle">
+                      <Award size={36} />
+                    </div>
+                    <h2>Application Journey Successfully Completed!</h2>
+                    <p>
+                      All statutory verifications and agency procedures for <strong>{activeApp.title}</strong> are approved and registered with the Government of Malaysia.
+                    </p>
+                  </div>
+
+                  {/* Registered Records Summary Table */}
+                  <div className="completed-records-card">
+                    <h3 className="records-card-title">Approved Agency Records & Certificates</h3>
+                    <div className="records-list">
+                      {rawSteps.map((st, i) => (
+                        <div key={st.id || i} className="record-item-row">
+                          <div className="record-left">
+                            <CheckCircle2 size={18} className="record-check-icon" />
+                            <div>
+                              <h4>{st.title}</h4>
+                              <span className="record-agency-tag">{st.agency}</span>
+                            </div>
+                          </div>
+
+                          <div className="record-right">
+                            <span className="record-ref-id">
+                              {st.submissionRecord?.referenceNumber || ('MYG-' + st.id.toUpperCase().replace('STEP-', '') + '-99120')}
+                            </span>
+                            <button
+                              type="button"
+                              className="view-record-btn"
+                              onClick={() => handleOpenWorkspace(st)}
+                            >
+                              <ExternalLink size={14} />
+                              <span>View Details</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Completed Actions */}
+                  <div className="completed-footer-actions">
+                    <button
+                      type="button"
+                      className="download-dossier-btn"
+                      onClick={() => alert('Official Application Dossier PDF generated and downloaded.')}
+                    >
+                      <Download size={16} />
+                      <span>Download Official Application Dossier</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="return-history-btn"
+                      onClick={handleBackToList}
+                    >
+                      <span>Return to Applications List</span>
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </section>
+              )}
+
             </div>
+          )}
+
+          {/* ════════════════════════════════════════════════════════════════════
+              VIEW 3: DEDICATED FULL-PAGE SERVICE WORKSPACE (NO POPUP MODAL)
+             ════════════════════════════════════════════════════════════════════ */}
+          {viewMode === 'service' && selectedService && activeApp && (
+            <ServiceWorkspaceView
+              service={selectedService}
+              journey={activeApp?.journey}
+              activeApp={activeApp}
+              username={username}
+              onBack={handleBackFromService}
+              onUpdateServiceStatus={handleUpdateServiceStatus}
+            />
           )}
 
         </div>
       </main>
 
-      {/* In-App Submission Modal */}
-      <ApplicationSubmissionModal
-        isOpen={isModalOpen}
-        step={submittingStep}
-        journey={activeApp?.journey}
-        username={username}
-        accumulatedArtifacts={getAccumulatedArtifacts(activeApp?.journey)}
-        onClose={() => setIsModalOpen(false)}
-        onSubmitSuccess={handleSubmitSuccess}
-      />
+      {/* Delete Application Confirmation Modal */}
+      {appToDelete && (
+        <div className="delete-confirm-overlay">
+          <div className="delete-confirm-modal">
+            <div className="delete-modal-icon-wrap">
+              <Trash2 size={26} />
+            </div>
+            <h3 className="delete-modal-title">Delete Application?</h3>
+            <p className="delete-modal-text">
+              Are you sure you want to delete <strong>{appToDelete.title}</strong> (<code>{appToDelete.id}</code>)?
+              This will remove this application and all associated service progress.
+            </p>
+            <div className="delete-modal-actions">
+              <button
+                type="button"
+                className="delete-cancel-btn"
+                onClick={() => setAppToDelete(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="delete-confirm-btn"
+                onClick={handleConfirmDelete}
+              >
+                Yes, Delete Application
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

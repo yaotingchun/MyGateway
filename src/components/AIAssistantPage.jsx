@@ -28,7 +28,8 @@ import {
   Compass,
   Mic,
   MicOff,
-  ArrowRight
+  ArrowRight,
+  RefreshCw
 } from 'lucide-react';
 import { marked } from 'marked';
 import Navbar from './Navbar';
@@ -83,6 +84,7 @@ const AIAssistantPage = ({
   const [feedbackGiven, setFeedbackGiven] = useState({});
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState(null);
+  const [creatingAppMsgId, setCreatingAppMsgId] = useState(null);
 
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -101,17 +103,26 @@ const AIAssistantPage = ({
 
   // Handle starting a formal application with MyGateway
   const handleStartApplication = async (msg) => {
+    if (creatingAppMsgId) return;
+    setCreatingAppMsgId(msg.id);
+
     try {
       await createApplicationFromChat(username, {
         journey: msg.journey,
         eligibility: msg.eligibility,
         query: msg.query || '',
       });
-      if (onNavigate) {
-        onNavigate('applications');
-      }
+
+      // Smooth visual transition feedback
+      setTimeout(() => {
+        setCreatingAppMsgId(null);
+        if (onNavigate) {
+          onNavigate('applications');
+        }
+      }, 350);
     } catch (err) {
       console.error('Failed to create application from chat:', err);
+      setCreatingAppMsgId(null);
       if (onNavigate) {
         onNavigate('applications');
       }
@@ -520,11 +531,21 @@ const AIAssistantPage = ({
                           </div>
                           <button
                             type="button"
-                            className="start-app-action-btn"
+                            className={`start-app-action-btn ${creatingAppMsgId === msg.id ? 'btn-creating' : ''}`}
                             onClick={() => handleStartApplication(msg)}
+                            disabled={creatingAppMsgId === msg.id}
                           >
-                            <span>Start Application with MyGateway</span>
-                            <ArrowRight size={16} />
+                            {creatingAppMsgId === msg.id ? (
+                              <>
+                                <RefreshCw size={16} className="spin-icon" />
+                                <span>Creating Application Journey...</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>Start Application with MyGateway</span>
+                                <ArrowRight size={16} />
+                              </>
+                            )}
                           </button>
                         </div>
                       )}

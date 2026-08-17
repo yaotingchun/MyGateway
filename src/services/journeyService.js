@@ -10,6 +10,7 @@ import {
   getDoc,
   getDocs,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase.js';
@@ -279,47 +280,113 @@ export async function createApplicationFromChat(userId = 'Jason', { journey, eli
   const randomSuffix = Math.floor(10000 + Math.random() * 90000);
   const appId = `APP-${now.getFullYear()}-${randomSuffix}`;
 
+  // Derive title & category
+  const title = journey?.title || (query ? `${query.charAt(0).toUpperCase() + query.slice(1)} Application` : 'Government Application Journey');
+  const summary = journey?.summary || 'Official step-by-step government agency applications and approvals.';
+
+  // Normalize steps
+  let rawSteps = (journey && Array.isArray(journey.steps)) ? journey.steps : [];
+  if (rawSteps.length === 0) {
+    rawSteps = [
+      {
+        id: 'step-agency-app',
+        title: title,
+        agency: 'Public Services Division (JPA / Agency)',
+        description: 'Submit formal application dossier and required supporting documentation.',
+        dependencies: [],
+        requires: ['Valid MyKad / Identity Record', 'Supporting Documents'],
+        produces: ['Official Reference Number', 'Application Acknowledgment'],
+        timeframe: '3 - 7 Working Days',
+        fee: 'Standard Agency Fee / Free',
+        status: 'ready_to_apply',
+      }
+    ];
+  }
+
+  const normalizedSteps = rawSteps.map((s, idx) => {
+    const deps = Array.isArray(s.dependencies) ? s.dependencies : [];
+    const isFirstOrNoDeps = deps.length === 0 || idx === 0;
+    return {
+      ...s,
+      id: s.id || `step-${idx + 1}`,
+      title: s.title || `Agency Application ${idx + 1}`,
+      agency: s.agency || 'Government Agency',
+      description: s.description || '',
+      dependencies: deps,
+      requires: Array.isArray(s.requires) && s.requires.length > 0 ? s.requires : ['MyKad Number'],
+      produces: Array.isArray(s.produces) && s.produces.length > 0 ? s.produces : ['Official Reference Number'],
+      timeframe: s.timeframe || s.estimatedDuration || '3 - 7 Working Days',
+      fee: s.fee || s.fees || 'Free',
+      status: s.status || (isFirstOrNoDeps ? 'ready_to_apply' : 'locked'),
+    };
+  });
+
+  // Extract agencies list
+  const agencySet = new Set();
+  normalizedSteps.forEach((st) => {
+    if (st.agency) agencySet.add(st.agency.split('(')[0].trim());
+  });
+  const agencies = Array.from(agencySet);
+
+  // Normalize criteria
+  let rawCriteria = eligibility?.criteria;
+  if (!Array.isArray(rawCriteria) || rawCriteria.length === 0) {
+    rawCriteria = [
+      { id: 'c1', label: 'Citizenship', requirement: 'Malaysian Citizen with valid MyKad / MyPR', isMandatory: true },
+      { id: 'c2', label: 'Age Requirement', requirement: 'Aged 18 years old and above', isMandatory: true },
+      { id: 'c3', label: 'Documentary Compliance', requirement: 'Hold valid supporting records and required statutory documents', isMandatory: true },
+    ];
+  }
+
+  const normalizedCriteria = rawCriteria.map((c, i) => ({
+    id: c.id || `c${i + 1}`,
+    label: c.label || `Requirement ${i + 1}`,
+    requirement: c.requirement || 'Statutory qualification criterion',
+    isMandatory: c.isMandatory !== false,
+  }));
+
   const newApp = {
     id: appId,
     userId: safeUserId,
-    title: journey?.title || 'Government Application Journey',
-    summary: journey?.summary || 'Step-by-step government agency applications and approvals.',
+    title,
+    summary,
     query: query || '',
+    category: 'Public Services & Applications',
+    agencies: agencies.length > 0 ? agencies : ['Government Agency'],
     status: 'In Progress',
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
     eligibility: {
-      summary: eligibility?.summary || 'Please verify the statutory eligibility criteria before proceeding.',
-      criteria: eligibility?.criteria || [
-        { id: 'c1', label: 'Citizenship', requirement: 'Malaysian Citizen with valid MyKad', isMandatory: true },
-        { id: 'c2', label: 'Age Requirement', requirement: 'Aged 18 years old and above', isMandatory: true },
-      ],
+      title: eligibility?.title || 'Statutory Eligibility Requirements',
+      summary: eligibility?.summary || 'Please verify statutory qualification criteria before submitting applications.',
+      criteria: normalizedCriteria,
       checkedCriteria: {},
       isEligible: false,
     },
-    journey: journey || {
-      id: `journey-${appId}`,
-      title: 'Agency Applications Roadmap',
-      steps: [],
+    journey: {
+      id: journey?.id || `journey-${appId}`,
+      title,
+      summary,
+      steps: normalizedSteps,
     },
   };
 
-  // 1. Save to local storage
+  // 1. Immediately write to Local Storage & set selected ID for instant reactivity
   const currentApps = getLocalActiveApplications();
   const updatedApps = [newApp, ...currentApps.filter((a) => a.id !== appId)];
   saveLocalActiveApplications(updatedApps);
   setSelectedApplicationId(appId);
 
-  // 2. Persist to Firestore
+  // 2. Non-blocking async background sync to Firestore
   try {
     const appDocRef = doc(db, 'users', safeUserId, 'active_applications', appId);
-    await setDoc(appDocRef, {
+    setDoc(appDocRef, {
       ...newApp,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+    }).catch((err) => console.warn('[JourneyService] Firestore background save note:', err.message));
   } catch (err) {
-    console.warn('[JourneyService] Note: Firestore active app save:', err.message);
+    console.warn('[JourneyService] Firestore note:', err.message);
   }
 
   return newApp;
@@ -403,6 +470,34 @@ export async function updateApplicationJourney(userId = 'Jason', appId, updatedJ
 }
 
 /**
+ * Delete an active application
+ */
+export async function deleteApplication(userId = 'Jason', appId) {
+  const safeUserId = userId.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const currentApps = getLocalActiveApplications();
+  const updatedApps = currentApps.filter((app) => app.id !== appId);
+  saveLocalActiveApplications(updatedApps);
+
+  const selectedId = getSelectedApplicationId();
+  if (selectedId === appId) {
+    if (updatedApps.length > 0) {
+      setSelectedApplicationId(updatedApps[0].id);
+    } else {
+      setSelectedApplicationId('');
+    }
+  }
+
+  try {
+    const appDocRef = doc(db, 'users', safeUserId, 'active_applications', appId);
+    await deleteDoc(appDocRef);
+  } catch (err) {
+    console.warn('[JourneyService] Firestore delete application note:', err.message);
+  }
+
+  return updatedApps;
+}
+
+/**
  * Fetch all submitted applications for the current user
  */
 export async function getUserApplications(userId = 'guest') {
@@ -421,3 +516,4 @@ export async function getUserApplications(userId = 'guest') {
     return [];
   }
 }
+
