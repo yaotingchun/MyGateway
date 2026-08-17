@@ -4,6 +4,7 @@ import {
   Building2,
   FileText,
   Clock,
+  Check,
   CheckCircle2,
   AlertCircle,
   AlertTriangle,
@@ -33,12 +34,20 @@ const ServiceWorkspaceView = ({
   if (!service) return null;
 
   const isLocked = service.status === 'locked';
+  const isSubmitted = (service.status === 'processing' || service.status === 'review_required' || service.status === 'rejected' || service.status === 'completed') && service.status !== 'ready_to_apply' && service.status !== 'pending';
 
-  const [activeTab, setActiveTab] = useState('form'); // 'form' | 'status_timeline' | 'documents'
+  const [isEditingForm, setIsEditingForm] = useState(false);
+  const [showCertView, setShowCertView] = useState(false);
   const [formData, setFormData] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [officerNote, setOfficerNote] = useState('');
   const [statutoryAgreed, setStatutoryAgreed] = useState(false);
+
+  // Reset local edit/cert view if service changes
+  useEffect(() => {
+    setIsEditingForm(false);
+    setShowCertView(false);
+  }, [service?.id]);
 
   // Initialize official form data
   useEffect(() => {
@@ -142,18 +151,29 @@ const ServiceWorkspaceView = ({
 
     setTimeout(() => {
       setIsSubmitting(false);
-      onUpdateServiceStatus(service.id, 'completed', {
+      setIsEditingForm(false);
+      setShowCertView(false);
+      onUpdateServiceStatus(service.id, 'processing', {
         referenceNumber: refNumber,
         submittedAt: new Date().toISOString(),
         formData: formData,
         output: output
       });
-      setActiveTab('status_timeline');
     }, 600);
   };
 
   // Status simulation actions
   const handleSetPhase = (newStatus) => {
+    setIsEditingForm(false);
+    setShowCertView(false);
+    if (newStatus === 'ready_to_apply') {
+      onUpdateServiceStatus(service.id, 'ready_to_apply', {
+        formData: formData,
+        referenceNumber: null,
+        submittedAt: null
+      });
+      return;
+    }
     onUpdateServiceStatus(service.id, newStatus, {
       formData: formData,
       referenceNumber: service.submissionRecord?.referenceNumber || ('MYG-' + service.id.toUpperCase() + '-882910'),
@@ -192,7 +212,7 @@ const ServiceWorkspaceView = ({
           onClick={onBack}
         >
           <ArrowLeft size={16} />
-          <span>Kembali ke Perjalanan Permohonan / Back to Application ({activeApp?.id})</span>
+          <span>Back to Application Journey ({activeApp?.id})</span>
         </button>
 
         <div className="gov-nav-right-meta">
@@ -216,68 +236,147 @@ const ServiceWorkspaceView = ({
             <div>
               <div className="banner-agency-row">
                 <span className="agency-name-tag">{service.agency}</span>
-                <span className="sub-tag">Portal Rasmi Kerajaan Digital</span>
+                <span className="sub-tag">Official Government e-Service</span>
               </div>
               <h1 className="banner-service-heading">{service.title}</h1>
             </div>
           </div>
         </div>
 
-        {/* ── Navigation Tabs ── */}
-        <div className="gov-page-tabs">
-          <button
-            type="button"
-            className={`gov-page-tab ${activeTab === 'form' ? 'active' : ''}`}
-            onClick={() => setActiveTab('form')}
-          >
-            <FileText size={15} />
-            <span>Borang Permohonan / Application Form</span>
-          </button>
-
-          <button
-            type="button"
-            className={`gov-page-tab ${activeTab === 'status_timeline' ? 'active' : ''}`}
-            onClick={() => setActiveTab('status_timeline')}
-          >
-            <Clock size={15} />
-            <span>Status & Fasa Proses / Lifecycle & Phase</span>
-          </button>
-
-          {service.status === 'completed' && (
-            <button
-              type="button"
-              className={`gov-page-tab ${activeTab === 'documents' ? 'active' : ''}`}
-              onClick={() => setActiveTab('documents')}
-            >
-              <Award size={15} />
-              <span>Sijil Digital Rasmi / Issued Certificate</span>
-            </button>
-          )}
-        </div>
-
-        {/* ── Body Content ── */}
+        {/* ── Body Content (Application Form OR Status Page directly, No Tabs) ── */}
         <div className="gov-card-body">
 
           {/* ════════════════════════════════════════════════════════════════════
-              TAB 1: GOVERNMENT FORM
+              VIEW A: OFFICIAL DIGITAL CERTIFICATE (When opened from Status Page)
              ════════════════════════════════════════════════════════════════════ */}
-          {activeTab === 'form' && (
+          {showCertView && service.status === 'completed' && (
+            <div className="gov-cert-full-view">
+              <div style={{ width: '100%', maxWidth: '780px', margin: '0 auto' }}>
+                <button
+                  type="button"
+                  className="gov-nav-back-btn"
+                  style={{ marginBottom: '16px' }}
+                  onClick={() => setShowCertView(false)}
+                >
+                  <ArrowLeft size={16} />
+                  <span>Back to Application Status & Timeline</span>
+                </button>
+
+                <div className="gov-cert-document">
+                  <div className="cert-crest-top">
+                    <Building2 size={32} />
+                  </div>
+                  <h2 className="cert-h2">GOVERNMENT OF MALAYSIA</h2>
+                  <h3 className="cert-h3">{service.agency.toUpperCase()}</h3>
+                  <h4 className="cert-h4">OFFICIAL DIGITAL REGISTRATION CERTIFICATE</h4>
+
+                  <div className="cert-table-box">
+                    <div className="cert-line">
+                      <span className="line-k">Certificate Serial No:</span>
+                      <span className="line-v mono">{service.submissionRecord?.referenceNumber || 'MYG-SSM-2026-891024'}</span>
+                    </div>
+
+                    <div className="cert-line">
+                      <span className="line-k">Business / Entity Name:</span>
+                      <span className="line-v">{formData.businessName || formData.fullName}</span>
+                    </div>
+
+                    <div className="cert-line">
+                      <span className="line-k">Owner NRIC / Identity No:</span>
+                      <span className="line-v mono">{formData.icNumber}</span>
+                    </div>
+
+                    <div className="cert-line">
+                      <span className="line-k">Operating Premise Address:</span>
+                      <span className="line-v">{formData.premiseAddress || formData.residentialAddress}</span>
+                    </div>
+
+                    <div className="cert-line">
+                      <span className="line-k">Issuance Date:</span>
+                      <span className="line-v">{new Date(service.submissionRecord?.submittedAt || Date.now()).toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                    </div>
+
+                    <div className="cert-line">
+                      <span className="line-k">Statutory Status:</span>
+                      <span className="line-v status-green">ACTIVE & OFFICIALLY REGISTERED</span>
+                    </div>
+                  </div>
+
+                  <div className="cert-stamp-row">
+                    <div className="stamp-qr">
+                      <QrCode size={52} />
+                      <span>Scan for official verification on MyGateway Public Ledger</span>
+                    </div>
+                    <div className="stamp-seal">
+                      <div className="seal-ring">
+                        <FileCheck size={24} />
+                        <span>OFFICIAL SEAL</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="cert-btns">
+                    <button
+                      type="button"
+                      className="gov-action-btn-back"
+                      onClick={() => window.print()}
+                    >
+                      <Printer size={15} />
+                      <span>Print Certificate</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="gov-action-btn-submit"
+                      onClick={() => alert('Official PDF certificate downloaded.')}
+                    >
+                      <Download size={15} />
+                      <span>Download PDF Certificate</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ════════════════════════════════════════════════════════════════════
+              VIEW B: APPLICATION FORM (Before Submission OR When Editing)
+             ════════════════════════════════════════════════════════════════════ */}
+          {!showCertView && (!isSubmitted || isEditingForm) && (
             <form onSubmit={handleSubmitForm} className="gov-full-form">
+
+              {/* Notice when editing an already-submitted form */}
+              {isEditingForm && (
+                <div className="gov-notice-banner notice-review" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertTriangle size={16} />
+                    <span><strong>Editing Application Details:</strong> Update required fields below and submit to resubmit your application.</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="gov-action-btn-back"
+                    style={{ padding: '5px 12px', fontSize: '0.78rem' }}
+                    onClick={() => setIsEditingForm(false)}
+                  >
+                    Cancel & Return to Status
+                  </button>
+                </div>
+              )}
 
               {/* Compact Information Strip */}
               <div className="gov-info-strip">
                 <div className="info-cell">
-                  <span className="cell-lbl">Tempoh Proses / Timeframe:</span>
-                  <span className="cell-val">{service.timeframe || '1 - 3 Hari Bekerja'}</span>
+                  <span className="cell-lbl">Timeframe:</span>
+                  <span className="cell-val">{service.timeframe || '1 - 3 Working Days'}</span>
                 </div>
                 <div className="info-divider"></div>
                 <div className="info-cell">
-                  <span className="cell-lbl">Fi Berkanun / Statutory Fee:</span>
-                  <span className="cell-val">{service.fee || 'Percuma / Free'}</span>
+                  <span className="cell-lbl">Statutory Fee:</span>
+                  <span className="cell-val">{service.fee || 'Free'}</span>
                 </div>
                 <div className="info-divider"></div>
                 <div className="info-cell">
-                  <span className="cell-lbl">Saluran / Filing Channel:</span>
+                  <span className="cell-lbl">Filing Channel:</span>
                   <span className="cell-val">MyGateway e-Service (100% Online)</span>
                 </div>
               </div>
@@ -286,7 +385,7 @@ const ServiceWorkspaceView = ({
               {isLocked && (
                 <div className="gov-notice-banner notice-locked">
                   <Lock size={16} />
-                  <span>Prasyarat Diperlukan: Sila lengkapkan permohonan prasyarat terdahulu sebelum menghantar permohonan ini. Anda boleh menyemak butiran borang terlebih dahulu.</span>
+                  <span>Prerequisite Required: Please complete previous prerequisite applications before submitting this application. You may review the form parameters below.</span>
                 </div>
               )}
 
@@ -294,20 +393,20 @@ const ServiceWorkspaceView = ({
               {service.status === 'review_required' && (
                 <div className="gov-notice-banner notice-review">
                   <AlertTriangle size={16} />
-                  <span>Tindakan Semakan Pegawai: {officerNote}</span>
+                  <span>Officer Review Action: {officerNote}</span>
                 </div>
               )}
 
-              {/* SECTION 1: MAKLUMAT PEMOHON / APPLICANT DETAILS */}
+              {/* SECTION 1: APPLICANT DETAILS */}
               <div className="gov-section-block">
                 <div className="gov-section-bar">
                   <User size={16} className="bar-icon" />
-                  <span>1. Maklumat Pemohon / Applicant Identification</span>
+                  <span>1. Applicant Identification & Personal Details</span>
                 </div>
 
                 <div className="gov-fields-grid">
                   <div className="gov-input-col">
-                    <label>Nama Penuh (Mengikut MyKad) *</label>
+                    <label>Full Name (As per NRIC) *</label>
                     <input
                       type="text"
                       required
@@ -317,7 +416,7 @@ const ServiceWorkspaceView = ({
                   </div>
 
                   <div className="gov-input-col">
-                    <label>No. MyKad / Identity Card No. *</label>
+                    <label>NRIC / Identity Card No. *</label>
                     <input
                       type="text"
                       required
@@ -327,7 +426,7 @@ const ServiceWorkspaceView = ({
                   </div>
 
                   <div className="gov-input-col">
-                    <label>No. Telefon Bimbit / Mobile No. *</label>
+                    <label>Mobile Phone Number *</label>
                     <input
                       type="tel"
                       required
@@ -337,7 +436,7 @@ const ServiceWorkspaceView = ({
                   </div>
 
                   <div className="gov-input-col">
-                    <label>Alamat Emel / Email Address *</label>
+                    <label>Email Address *</label>
                     <input
                       type="email"
                       required
@@ -347,7 +446,7 @@ const ServiceWorkspaceView = ({
                   </div>
 
                   <div className="gov-input-col span-2">
-                    <label>Alamat Kediaman / Principal Residential Address *</label>
+                    <label>Principal Residential Address *</label>
                     <input
                       type="text"
                       required
@@ -358,11 +457,11 @@ const ServiceWorkspaceView = ({
                 </div>
               </div>
 
-              {/* SECTION 2: BUTIRAN PERMOHONAN / APPLICATION DETAILS */}
+              {/* SECTION 2: REGISTRATION PARAMETERS */}
               <div className="gov-section-block">
                 <div className="gov-section-bar">
                   <Briefcase size={16} className="bar-icon" />
-                  <span>2. Butiran Pendaftaran & Parameter Agensi / Registration Parameters</span>
+                  <span>2. Registration Parameters & Agency Form Fields</span>
                 </div>
 
                 <div className="gov-fields-grid">
@@ -370,7 +469,7 @@ const ServiceWorkspaceView = ({
                   {service.id.includes('ssm') && (
                     <>
                       <div className="gov-input-col span-2">
-                        <label>Cadangan Nama Perniagaan / Proposed Business Trade Name *</label>
+                        <label>Proposed Business Trade Name *</label>
                         <input
                           type="text"
                           required
@@ -380,31 +479,31 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Jenis Milikan / Entity Type *</label>
+                        <label>Entity Type *</label>
                         <select
                           value={formData.businessType}
                           onChange={(e) => handleChange('businessType', e.target.value)}
                         >
-                          <option value="Sole Proprietorship (Pemilikan Tunggal)">Sole Proprietorship (Pemilikan Tunggal)</option>
-                          <option value="Partnership (Perkongsian)">Partnership (Perkongsian)</option>
-                          <option value="Sdn Bhd (Sendirian Berhad)">Sdn Bhd (Sendirian Berhad)</option>
+                          <option value="Sole Proprietorship (Pemilikan Tunggal)">Sole Proprietorship</option>
+                          <option value="Partnership (Perkongsian)">Partnership</option>
+                          <option value="Sdn Bhd (Sendirian Berhad)">Private Limited Company (Sdn Bhd)</option>
                         </select>
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Tempoh Pendaftaran / Registration Period *</label>
+                        <label>Registration Period *</label>
                         <select
                           value={formData.businessRegPeriod}
                           onChange={(e) => handleChange('businessRegPeriod', e.target.value)}
                         >
-                          <option value="1 Year (RM60)">1 Tahun (RM60)</option>
-                          <option value="2 Years (RM120)">2 Tahun (RM120)</option>
-                          <option value="5 Years (RM300)">5 Tahun (RM300)</option>
+                          <option value="1 Year (RM60)">1 Year (RM60)</option>
+                          <option value="2 Years (RM120)">2 Years (RM120)</option>
+                          <option value="5 Years (RM300)">5 Years (RM300)</option>
                         </select>
                       </div>
 
                       <div className="gov-input-col span-2">
-                        <label>Kod & Klasifikasi Aktiviti Ekonomi (MSIC) *</label>
+                        <label>Economic Activity Classification (MSIC Code) *</label>
                         <input
                           type="text"
                           required
@@ -414,7 +513,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Tarikh Mula Perniagaan / Start Date *</label>
+                        <label>Business Commencement Date *</label>
                         <input
                           type="date"
                           required
@@ -424,19 +523,19 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Pemilikan Premis / Premise Ownership</label>
+                        <label>Premise Ownership</label>
                         <select
                           value={formData.premiseOwnership}
                           onChange={(e) => handleChange('premiseOwnership', e.target.value)}
                         >
-                          <option value="Rented Commercial Shop Lot">Premis Sewa / Rented Commercial</option>
-                          <option value="Self-Owned Commercial Property">Milik Sendiri / Owned Property</option>
-                          <option value="Home / Online Based">Dalam Talian / Online Based</option>
+                          <option value="Rented Commercial Shop Lot">Rented Commercial Shop Lot</option>
+                          <option value="Self-Owned Commercial Property">Self-Owned Commercial Property</option>
+                          <option value="Home / Online Based">Home / Online Based</option>
                         </select>
                       </div>
 
                       <div className="gov-input-col span-2">
-                        <label>Alamat Tempat Utama Perniagaan / Operating Premise Address *</label>
+                        <label>Principal Place of Operating Premise Address *</label>
                         <input
                           type="text"
                           required
@@ -451,7 +550,7 @@ const ServiceWorkspaceView = ({
                   {service.id.includes('pbt') && (
                     <>
                       <div className="gov-input-col">
-                        <label>No. Pendaftaran SSM Disahkan *</label>
+                        <label>Verified SSM Registration Number *</label>
                         <input
                           type="text"
                           required
@@ -461,20 +560,20 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Pihak Berkuasa Tempatan (PBT) *</label>
+                        <label>Local Council Authority (PBT) *</label>
                         <select
                           value={formData.localCouncil}
                           onChange={(e) => handleChange('localCouncil', e.target.value)}
                         >
-                          <option value="Dewan Bandaraya Kuala Lumpur (DBKL)">Dewan Bandaraya Kuala Lumpur (DBKL)</option>
-                          <option value="Majlis Bandaraya Petaling Jaya (MBPJ)">Majlis Bandaraya Petaling Jaya (MBPJ)</option>
-                          <option value="Majlis Bandaraya Shah Alam (MBSA)">Majlis Bandaraya Shah Alam (MBSA)</option>
-                          <option value="Majlis Perbandaran Kajang (MPKJ)">Majlis Perbandaran Kajang (MPKJ)</option>
+                          <option value="Dewan Bandaraya Kuala Lumpur (DBKL)">Kuala Lumpur City Hall (DBKL)</option>
+                          <option value="Majlis Bandaraya Petaling Jaya (MBPJ)">Petaling Jaya City Council (MBPJ)</option>
+                          <option value="Majlis Bandaraya Shah Alam (MBSA)">Shah Alam City Council (MBSA)</option>
+                          <option value="Majlis Perbandaran Kajang (MPKJ)">Kajang Municipal Council (MPKJ)</option>
                         </select>
                       </div>
 
                       <div className="gov-input-col span-2">
-                        <label>Alamat Premis Beroperasi *</label>
+                        <label>Operating Premise Address *</label>
                         <input
                           type="text"
                           required
@@ -484,7 +583,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Keluasan Lantai Premis ($m^2$) *</label>
+                        <label>Premise Floor Area ($m^2$) *</label>
                         <input
                           type="text"
                           required
@@ -494,7 +593,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Tempoh Perjanjian Sewa Premis *</label>
+                        <label>Tenancy Agreement Duration *</label>
                         <input
                           type="text"
                           required
@@ -504,7 +603,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Perkataan Papan Tanda (Bahasa Melayu) *</label>
+                        <label>Signboard Text / Wording (Malay Language) *</label>
                         <input
                           type="text"
                           required
@@ -514,7 +613,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>No. Rujukan Sijil DBP Sah Bahasa *</label>
+                        <label>DBP Language Certification Ref No. *</label>
                         <input
                           type="text"
                           required
@@ -524,7 +623,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>No. Sijil Latihan Pengendali Makanan (SLPM) *</label>
+                        <label>MOH Food Handler Training (SLPM) Cert No. *</label>
                         <input
                           type="text"
                           required
@@ -534,7 +633,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>No. Kad Suntikan Typhoid (TY2) *</label>
+                        <label>Typhoid Vaccination Card No. (TY2) *</label>
                         <input
                           type="text"
                           required
@@ -549,18 +648,18 @@ const ServiceWorkspaceView = ({
                   {service.id.includes('lhdn') && (
                     <>
                       <div className="gov-input-col">
-                        <label>Kategori Fail Cukai Pendapatan *</label>
+                        <label>Income Tax File Category *</label>
                         <select
                           value={formData.taxFileCategory}
                           onChange={(e) => handleChange('taxFileCategory', e.target.value)}
                         >
-                          <option value="Individual with Business Income (Borang B)">Individu Berniaga (Borang B)</option>
-                          <option value="Company / Enterprise (Borang C)">Syarikat / Perkongsian (Borang C)</option>
+                          <option value="Individual with Business Income (Borang B)">Individual with Business Income (Form B)</option>
+                          <option value="Company / Enterprise (Borang C)">Company / Partnership (Form C)</option>
                         </select>
                       </div>
 
                       <div className="gov-input-col">
-                        <label>No. Pengenalan Cukai (TIN) *</label>
+                        <label>Tax Identification Number (TIN) *</label>
                         <input
                           type="text"
                           required
@@ -570,25 +669,25 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Kaedah Integrasi MyInvois *</label>
+                        <label>MyInvois Integration Method *</label>
                         <select
                           value={formData.eInvoicingMethod}
                           onChange={(e) => handleChange('eInvoicingMethod', e.target.value)}
                         >
-                          <option value="MyInvois Portal & Open API Gateway">Portal MyInvois & Gateway API</option>
-                          <option value="Direct ERP / POS Integration">Integrasi Terus ERP / POS</option>
+                          <option value="MyInvois Portal & Open API Gateway">MyInvois Portal & Open API Gateway</option>
+                          <option value="Direct ERP / POS Integration">Direct ERP / POS Integration</option>
                         </select>
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Anggaran Pendapatan Tahunan *</label>
+                        <label>Estimated Annual Turnover *</label>
                         <select
                           value={formData.turnoverBracket}
                           onChange={(e) => handleChange('turnoverBracket', e.target.value)}
                         >
-                          <option value="Under RM150,000 / year">Bawah RM150,000 / tahun</option>
-                          <option value="RM150,000 - RM500,000 / year">RM150,000 - RM500,000 / tahun</option>
-                          <option value="RM500,000 - RM1,000,000 / year">RM500,000 - RM1,000,000 / tahun</option>
+                          <option value="Under RM150,000 / year">Under RM150,000 / year</option>
+                          <option value="RM150,000 - RM500,000 / year">RM150,000 - RM500,000 / year</option>
+                          <option value="RM500,000 - RM1,000,000 / year">RM500,000 - RM1,000,000 / year</option>
                         </select>
                       </div>
                     </>
@@ -598,18 +697,18 @@ const ServiceWorkspaceView = ({
                   {service.id.includes('jakim') && (
                     <>
                       <div className="gov-input-col">
-                        <label>Skim Pensijilan Halal *</label>
+                        <label>Halal Certification Scheme *</label>
                         <select
                           value={formData.halalScheme}
                           onChange={(e) => handleChange('halalScheme', e.target.value)}
                         >
-                          <option value="Food & Beverage Premise / Restaurant">Premis Makanan & Minuman / Restoran</option>
-                          <option value="Food Manufacturing">Pengilangan Makanan</option>
+                          <option value="Food & Beverage Premise / Restaurant">Food & Beverage Premise / Restaurant</option>
+                          <option value="Food Manufacturing">Food Manufacturing</option>
                         </select>
                       </div>
 
                       <div className="gov-input-col">
-                        <label>No. Eksekutif Halal Diiktiraf *</label>
+                        <label>Certified Halal Executive ID *</label>
                         <input
                           type="text"
                           required
@@ -619,7 +718,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Bilangan Pengendali Muslim *</label>
+                        <label>Number of Muslim Handlers *</label>
                         <input
                           type="text"
                           required
@@ -629,7 +728,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Kontraktor Kawalan Makhluk Perosak *</label>
+                        <label>Pest Control Service Contractor *</label>
                         <input
                           type="text"
                           required
@@ -644,7 +743,7 @@ const ServiceWorkspaceView = ({
                   {service.id.includes('ptptn') && (
                     <>
                       <div className="gov-input-col">
-                        <label>No. Akaun Simpan SSPN Disahkan *</label>
+                        <label>Verified Simpan SSPN Account No. *</label>
                         <input
                           type="text"
                           required
@@ -654,7 +753,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Institusi Pengajian Tinggi (IPTA / IPTS) *</label>
+                        <label>Higher Education Institution (Public / Private) *</label>
                         <input
                           type="text"
                           required
@@ -664,7 +763,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Nama Program / Kursus Pengajian *</label>
+                        <label>Degree / Course of Study Name *</label>
                         <input
                           type="text"
                           required
@@ -674,7 +773,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Kod Rujukan Akreditasi MQA *</label>
+                        <label>MQA Accreditation Reference Code *</label>
                         <input
                           type="text"
                           required
@@ -684,7 +783,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>Nama Bank Pembayaran Pinjaman *</label>
+                        <label>Disbursement Bank Name *</label>
                         <input
                           type="text"
                           required
@@ -694,7 +793,7 @@ const ServiceWorkspaceView = ({
                       </div>
 
                       <div className="gov-input-col">
-                        <label>No. Akaun Bank Pemohon *</label>
+                        <label>Applicant Bank Account Number *</label>
                         <input
                           type="text"
                           required
@@ -713,15 +812,15 @@ const ServiceWorkspaceView = ({
                    !service.id.includes('ptptn') && (
                     <>
                       <div className="gov-input-col span-2">
-                        <label>Keterangan & Tujuan Permohonan *</label>
+                        <label>Purpose & Description of Application *</label>
                         <input
                           type="text"
                           required
-                          defaultValue={service.description || 'Permohonan perkhidmatan awam kerajaan'}
+                          defaultValue={service.description || 'Government public digital service application'}
                         />
                       </div>
                       <div className="gov-input-col">
-                        <label>Cawangan / Kaunter Pilihan</label>
+                        <label>Preferred Branch / UTC Counter</label>
                         <select defaultValue="Putrajaya / UTC KL">
                           <option value="Putrajaya / UTC KL">Putrajaya / UTC KL</option>
                           <option value="UTC Selangor">UTC Selangor</option>
@@ -729,7 +828,7 @@ const ServiceWorkspaceView = ({
                         </select>
                       </div>
                       <div className="gov-input-col">
-                        <label>No. Rujukan Dokumen</label>
+                        <label>Document Reference Number</label>
                         <input type="text" defaultValue="MYG-DOC-2026-88124" />
                       </div>
                     </>
@@ -737,42 +836,42 @@ const ServiceWorkspaceView = ({
                 </div>
               </div>
 
-              {/* SECTION 3: SENARAI DOKUMEN & LAMPIRAN */}
+              {/* SECTION 3: SUPPORTING DOCUMENTS */}
               <div className="gov-section-block">
                 <div className="gov-section-bar">
                   <Paperclip size={16} className="bar-icon" />
-                  <span>3. Dokumen Sokongan / Supporting Documents</span>
+                  <span>3. Supporting Documents & Official Verifications</span>
                 </div>
 
                 <div className="gov-docs-grid">
                   <div className="gov-doc-item">
-                    <span className="doc-item-title">Salinan Kad Pengenalan MyKad (Depan & Belakang)</span>
-                    <span className="doc-badge-verified">Disahkan JPN</span>
+                    <span className="doc-item-title">Copy of NRIC Identity Card (Front & Back)</span>
+                    <span className="doc-badge-verified">Verified with JPN</span>
                   </div>
 
                   {service.id.includes('ssm') && (
                     <div className="gov-doc-item">
-                      <span className="doc-item-title">Perjanjian Sewa Premis / Geran Hakmilik</span>
-                      <span className="doc-badge-attached">Dilampirkan</span>
+                      <span className="doc-item-title">Tenancy Agreement / Land Ownership Grant</span>
+                      <span className="doc-badge-attached">Attached</span>
                     </div>
                   )}
 
                   {service.id.includes('pbt') && (
                     <>
                       <div className="gov-doc-item">
-                        <span className="doc-item-title">Sijil Pendaftaran SSM (Borang D / Borang E)</span>
-                        <span className="doc-badge-verified">Disahkan SSM</span>
+                        <span className="doc-item-title">SSM Business Registration Certificate (Form D / E)</span>
+                        <span className="doc-badge-verified">Verified with SSM</span>
                       </div>
                       <div className="gov-doc-item">
-                        <span className="doc-item-title">Sijil Latihan SLPM KKM & Kad Suntikan Typhoid TY2</span>
-                        <span className="doc-badge-verified">Disahkan KKM</span>
+                        <span className="doc-item-title">MOH SLPM Training Certificate & TY2 Typhoid Card</span>
+                        <span className="doc-badge-verified">Verified with MOH</span>
                       </div>
                     </>
                   )}
                 </div>
               </div>
 
-              {/* SECTION 4: PERAKUAN BERKANUN */}
+              {/* SECTION 4: STATUTORY DECLARATION */}
               <div className="gov-declaration-card">
                 <label className="gov-decl-checkbox">
                   <input
@@ -783,7 +882,7 @@ const ServiceWorkspaceView = ({
                     disabled={isLocked}
                   />
                   <span>
-                    Saya dengan ini mengesahkan dan memperakui bahawa segala maklumat dan dokumen yang dikemukakan adalah benar dan tepat di bawah <strong>Akta Akuan Berkanun 1960</strong>. / I hereby declare under the Statutory Declarations Act 1960 that all information provided is authentic and correct.
+                    I hereby solemnly declare under the <strong>Statutory Declarations Act 1960</strong> that all information and documents submitted herein are authentic, complete, and correct.
                   </span>
                 </label>
               </div>
@@ -795,7 +894,7 @@ const ServiceWorkspaceView = ({
                   className="gov-action-btn-back"
                   onClick={onBack}
                 >
-                  Kembali / Back
+                  Back
                 </button>
 
                 {!isLocked ? (
@@ -807,17 +906,17 @@ const ServiceWorkspaceView = ({
                     {isSubmitting ? (
                       <>
                         <RefreshCw size={15} className="spin-icon" />
-                        <span>Menghantar ke Agensi...</span>
+                        <span>Submitting to Agency...</span>
                       </>
                     ) : service.status === 'completed' ? (
                       <>
                         <RefreshCw size={15} />
-                        <span>Kemas Kini & Hantar Semula</span>
+                        <span>Update & Resubmit</span>
                       </>
                     ) : (
                       <>
                         <Send size={15} />
-                        <span>Hantar Permohonan ke Agensi / Submit Application</span>
+                        <span>Submit Application to Agency</span>
                       </>
                     )}
                   </button>
@@ -833,169 +932,294 @@ const ServiceWorkspaceView = ({
           )}
 
           {/* ════════════════════════════════════════════════════════════════════
-              TAB 2: LIFECYCLE TIMELINE & SIMULATION
+              VIEW C: APPLICATION STATUS & LIFECYCLE HORIZONTAL TIMELINE
+              (Rendered directly after submission, No tabs)
              ════════════════════════════════════════════════════════════════════ */}
-          {activeTab === 'status_timeline' && (
+          {!showCertView && isSubmitted && !isEditingForm && (
             <div className="gov-lifecycle-view">
 
-              {/* Simulation Switcher */}
-              <div className="gov-simulation-box">
-                <span className="sim-head">Uji Fasa Proses / Test Lifecycle Phase:</span>
-                <div className="sim-btns">
+              {/* 1. BIG STATUS SIGN ON TOP WITH FULL DESCRIPTION */}
+              <div className={`gov-big-status-card status-theme-${service.status || 'processing'}`}>
+                <div className="big-status-left-icon">
+                  {service.status === 'completed' ? (
+                    <div className="status-icon-bubble bubble-completed">
+                      <CheckCircle2 size={36} />
+                    </div>
+                  ) : service.status === 'review_required' ? (
+                    <div className="status-icon-bubble bubble-review">
+                      <AlertTriangle size={34} />
+                    </div>
+                  ) : service.status === 'rejected' ? (
+                    <div className="status-icon-bubble bubble-rejected">
+                      <AlertCircle size={34} />
+                    </div>
+                  ) : (
+                    <div className="status-icon-bubble bubble-processing">
+                      <RefreshCw size={32} className="spin-slow" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="big-status-content">
+                  <div className="big-status-badge-row">
+                    <span className={`big-status-type-pill pill-${service.status || 'processing'}`}>
+                      {service.status === 'completed'
+                        ? 'OFFICIAL APPROVAL GRANTED'
+                        : service.status === 'review_required'
+                        ? 'ACTION REQUIRED • REVIEW'
+                        : service.status === 'rejected'
+                        ? 'APPLICATION REJECTED'
+                        : 'OFFICIALLY SUBMITTED • IN PROGRESS'}
+                    </span>
+                    <span className="big-status-ref-tag">
+                      Ref: {service.submissionRecord?.referenceNumber || ('MYG-' + service.id.toUpperCase().replace('STEP-', '') + '-882910')}
+                    </span>
+                  </div>
+
+                  <h2 className="big-status-title">
+                    {service.status === 'completed'
+                      ? 'Application Approved & Officially Registered'
+                      : service.status === 'review_required'
+                      ? 'Officer Review & Additional Clarification Required'
+                      : service.status === 'rejected'
+                      ? 'Application Rejected by Agency'
+                      : 'Application Successfully Lodged & Under Active Processing'}
+                  </h2>
+
+                  <p className="big-status-desc">
+                    {service.status === 'completed'
+                      ? `Your statutory application with ${service.agency} has been fully validated, approved, and officially recorded in the National Digital Register. Your official certificate is active and ready.`
+                      : service.status === 'review_required'
+                      ? `The licensing officer from ${service.agency} has reviewed your filing and requested clarification. Please review the officer's feedback below and update your details.`
+                      : service.status === 'rejected'
+                      ? `Your application could not be approved due to statutory discrepancies with agency rules. Please review the reasons and resubmit with updated documents.`
+                      : `Your application has been received and digitally recorded on the MyGateway portal. Centralized statutory cross-checking against official databases is currently in progress by ${service.agency}.`}
+                  </p>
+
+                  <div className="big-status-meta-strip">
+                    <div className="meta-item">
+                      <span className="meta-k">Submitted At:</span>
+                      <span className="meta-v">
+                        {service.submissionRecord?.submittedAt
+                          ? new Date(service.submissionRecord.submittedAt).toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short' })
+                          : new Date().toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short' })}
+                      </span>
+                    </div>
+                    <div className="meta-pipe" />
+                    <div className="meta-item">
+                      <span className="meta-k">Responsible Agency:</span>
+                      <span className="meta-v">{service.agency}</span>
+                    </div>
+                    <div className="meta-pipe" />
+                    <div className="meta-item">
+                      <span className="meta-k">Estimated Turnaround:</span>
+                      <span className="meta-v">{service.timeframe || '1 - 3 Working Days'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. OFFICER ACTION BOX (if Review Required or Rejected) */}
+              {(service.status === 'review_required' || service.status === 'rejected') && (
+                <div className="officer-feedback-banner">
+                  <div className="feedback-top">
+                    <AlertTriangle size={20} className="feedback-icon" />
+                    <div>
+                      <h4>Official Agency Officer Feedback:</h4>
+                      <p>{officerNote || (service.status === 'review_required' ? 'Signboard artwork requires DBP Sah Bahasa certificate confirmation.' : 'Information mismatch. Please verify applicant MyKad identity.')}</p>
+                    </div>
+                  </div>
                   <button
                     type="button"
-                    className={`sim-tag-btn ${service.status === 'ready_to_apply' || service.status === 'pending' ? 'active' : ''}`}
-                    onClick={() => handleSetPhase('ready_to_apply')}
+                    className="feedback-action-btn"
+                    onClick={() => setIsEditingForm(true)}
                   >
-                    Sedia / Ready
+                    Edit Application & Resubmit
                   </button>
+                </div>
+              )}
+
+              {/* 3. HORIZONTAL TIMELINE UI (100% Aligned 4-Column Units) */}
+              <div className="gov-horizontal-timeline-card">
+                <div className="timeline-card-header">
+                  <h3>Application Lifecycle & Milestone Timeline</h3>
+                  <span className="timeline-live-tag">
+                    <Clock size={13} /> Real-time Agency SLA Tracking
+                  </span>
+                </div>
+
+                <div className="horizontal-timeline-stepper">
+                  {/* Continuous Connecting Line Behind Nodes */}
+                  <div className="timeline-background-track">
+                    <div
+                      className={`timeline-progress-fill fill-${service.status || 'processing'}`}
+                      style={{
+                        width: service.status === 'completed'
+                          ? '100%'
+                          : service.status === 'review_required' || service.status === 'rejected'
+                          ? '66.6%'
+                          : '33.3%'
+                      }}
+                    />
+                  </div>
+
+                  {/* 4 Stage Units - Perfectly Aligned Columns */}
+                  <div className="timeline-columns-grid">
+
+                    {/* Milestone 1 */}
+                    <div className="milestone-stage-unit">
+                      <span className="unit-date-label label-done">Aug 17</span>
+                      <div className="unit-node-wrap node-done">
+                        <div className="node-icon-circle">
+                          <Check size={16} />
+                        </div>
+                      </div>
+                      <div className="unit-text-details">
+                        <span className="milestone-step-tag">Milestone 1</span>
+                        <h4 className="milestone-title">Digital Filing Lodged</h4>
+                        <p className="milestone-desc">Application & payment received with official timestamp.</p>
+                        <span className="milestone-status-pill pill-done">Completed</span>
+                      </div>
+                    </div>
+
+                    {/* Milestone 2 */}
+                    <div className="milestone-stage-unit">
+                      <span className={`unit-date-label ${service.status === 'processing' || service.status === 'review_required' || service.status === 'completed' ? 'label-done' : ''}`}>Aug 18</span>
+                      <div className={`unit-node-wrap ${service.status === 'completed' || service.status === 'review_required' || service.status === 'rejected' ? 'node-done' : service.status === 'processing' ? 'node-active' : ''}`}>
+                        <div className="node-icon-circle">
+                          {service.status === 'completed' || service.status === 'review_required' || service.status === 'rejected' ? (
+                            <Check size={16} />
+                          ) : (
+                            <RefreshCw size={14} className="spin-slow" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="unit-text-details">
+                        <span className="milestone-step-tag">Milestone 2</span>
+                        <h4 className="milestone-title">Automated Verification</h4>
+                        <p className="milestone-desc">Data cross-checked with JPN, SSM, LHDN & PBT databases.</p>
+                        <span className={`milestone-status-pill ${service.status === 'completed' || service.status === 'review_required' || service.status === 'rejected' ? 'pill-done' : 'pill-active'}`}>
+                          {service.status === 'completed' || service.status === 'review_required' || service.status === 'rejected' ? 'Completed' : 'In Progress'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Milestone 3 */}
+                    <div className="milestone-stage-unit">
+                      <span className={`unit-date-label ${service.status === 'review_required' ? 'label-review' : service.status === 'completed' ? 'label-done' : ''}`}>Aug 19</span>
+                      <div className={`unit-node-wrap ${service.status === 'completed' ? 'node-done' : service.status === 'review_required' ? 'node-review' : service.status === 'rejected' ? 'node-rejected' : ''}`}>
+                        <div className="node-icon-circle">
+                          {service.status === 'completed' ? (
+                            <Check size={16} />
+                          ) : service.status === 'review_required' ? (
+                            <AlertTriangle size={15} />
+                          ) : service.status === 'rejected' ? (
+                            <AlertCircle size={15} />
+                          ) : (
+                            <span className="node-num">3</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="unit-text-details">
+                        <span className="milestone-step-tag">Milestone 3</span>
+                        <h4 className="milestone-title">Technical Officer Review</h4>
+                        <p className="milestone-desc">Assessment by licensing officer & committee evaluation.</p>
+                        <span className={`milestone-status-pill ${service.status === 'completed' ? 'pill-done' : service.status === 'review_required' ? 'pill-review' : service.status === 'rejected' ? 'pill-rejected' : 'pill-pending'}`}>
+                          {service.status === 'completed' ? 'Completed' : service.status === 'review_required' ? 'Review Required' : service.status === 'rejected' ? 'Rejected' : 'Pending'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Milestone 4 */}
+                    <div className="milestone-stage-unit">
+                      <span className={`unit-date-label ${service.status === 'completed' ? 'label-done' : ''}`}>Aug 20</span>
+                      <div className={`unit-node-wrap ${service.status === 'completed' ? 'node-completed-final' : ''}`}>
+                        <div className="node-icon-circle">
+                          {service.status === 'completed' ? (
+                            <Award size={18} />
+                          ) : (
+                            <span className="node-num">4</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="unit-text-details">
+                        <span className="milestone-step-tag">Milestone 4</span>
+                        <h4 className="milestone-title">Official Approval & Cert</h4>
+                        <p className="milestone-desc">Registration approved and digital certificate issued.</p>
+                        <span className={`milestone-status-pill ${service.status === 'completed' ? 'pill-done' : 'pill-pending'}`}>
+                          {service.status === 'completed' ? 'Active & Issued' : 'Pending'}
+                        </span>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. COMPLETED QUICK ACTION (View Certificate) */}
+              {service.status === 'completed' && (
+                <div className="cert-ready-cta-box">
+                  <div className="cta-left">
+                    <Award size={24} className="cta-icon" />
+                    <div>
+                      <h4>Official Registration Certificate is Ready</h4>
+                      <p>Your official digital certificate with secure verification QR code is available.</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="view-cert-cta-btn"
+                    onClick={() => setShowCertView(true)}
+                  >
+                    View Official Digital Certificate
+                  </button>
+                </div>
+              )}
+
+              {/* 5. SIMULATION TOOLBAR (For Testing Lifecycle States) */}
+              <div className="gov-simulation-box">
+                <span className="sim-head">Simulate Agency Lifecycle Phase:</span>
+                <div className="sim-btns">
                   <button
                     type="button"
                     className={`sim-tag-btn ${service.status === 'processing' ? 'active' : ''}`}
                     onClick={() => handleSetPhase('processing')}
                   >
-                    Diproses / Processing
+                    ⏳ Processing
                   </button>
                   <button
                     type="button"
                     className={`sim-tag-btn ${service.status === 'review_required' ? 'active' : ''}`}
                     onClick={() => handleSetPhase('review_required')}
                   >
-                    Semakan / Review
+                    ⚠️ Review Required
                   </button>
                   <button
                     type="button"
                     className={`sim-tag-btn ${service.status === 'rejected' ? 'active' : ''}`}
                     onClick={() => handleSetPhase('rejected')}
                   >
-                    Ditolak / Rejected
+                    ❌ Rejected
                   </button>
                   <button
                     type="button"
                     className={`sim-tag-btn ${service.status === 'completed' ? 'active' : ''}`}
                     onClick={() => handleSetPhase('completed')}
                   >
-                    Lulus / Completed
+                    ✔ Approved / Completed
                   </button>
-                </div>
-              </div>
-
-              {/* Lifecycle Track */}
-              <div className="gov-step-track">
-                <div className={`gov-track-step ${service.status !== 'ready_to_apply' && service.status !== 'locked' ? 'step-done' : 'step-active'}`}>
-                  <div className="step-num-badge">1</div>
-                  <div className="step-details">
-                    <h4>Penerimaan Permohonan / Digital Filing</h4>
-                    <p>Permohonan diterima secara digital dengan rekod masa rasmi gerbang MyGateway.</p>
-                  </div>
-                </div>
-
-                <div className={`gov-track-step ${service.status === 'processing' || service.status === 'review_required' || service.status === 'completed' ? (service.status === 'completed' ? 'step-done' : 'step-active') : ''}`}>
-                  <div className="step-num-badge">2</div>
-                  <div className="step-details">
-                    <h4>Semakan Dokumen & Pengesahan Pangkalan Data</h4>
-                    <p>Pengesahan silang data automatik dengan pangkalan data JPN, SSM, LHDN dan PBT.</p>
-                  </div>
-                </div>
-
-                <div className={`gov-track-step ${service.status === 'review_required' ? 'step-active' : service.status === 'completed' ? 'step-done' : ''}`}>
-                  <div className="step-num-badge">3</div>
-                  <div className="step-details">
-                    <h4>Penilaian Teknikal & Pegawai Agensi</h4>
-                    <p>Penilaian oleh pegawai pelesenan dan kelulusan teknikal jawatankuasa agensi.</p>
-                  </div>
-                </div>
-
-                <div className={`gov-track-step ${service.status === 'completed' ? 'step-done step-active' : ''}`}>
-                  <div className="step-num-badge">4</div>
-                  <div className="step-details">
-                    <h4>Kelulusan Berkanun & Pengeluaran Sijil Digital</h4>
-                    <p>Pendaftaran diluluskan secara rasmi dan sijil digital sah boleh dimuat turun.</p>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {/* ════════════════════════════════════════════════════════════════════
-              TAB 3: OFFICIAL DIGITAL CERTIFICATE
-             ════════════════════════════════════════════════════════════════════ */}
-          {activeTab === 'documents' && (
-            <div className="gov-cert-full-view">
-              <div className="gov-cert-document">
-                <div className="cert-crest-top">
-                  <Building2 size={32} />
-                </div>
-                <h2 className="cert-h2">KERAJAAN MALAYSIA</h2>
-                <h3 className="cert-h3">{service.agency.toUpperCase()}</h3>
-                <h4 className="cert-h4">SIJIL PENDAFTARAN DIGITAL RASMI</h4>
-
-                <div className="cert-table-box">
-                  <div className="cert-line">
-                    <span className="line-k">No. Siri Sijil / Serial No:</span>
-                    <span className="line-v mono">{service.submissionRecord?.referenceNumber || 'MYG-SSM-2026-891024'}</span>
-                  </div>
-
-                  <div className="cert-line">
-                    <span className="line-k">Nama Perniagaan / Entiti:</span>
-                    <span className="line-v">{formData.businessName || formData.fullName}</span>
-                  </div>
-
-                  <div className="cert-line">
-                    <span className="line-k">No. Kad Pengenalan Pemilik:</span>
-                    <span className="line-v mono">{formData.icNumber}</span>
-                  </div>
-
-                  <div className="cert-line">
-                    <span className="line-k">Alamat Premis Beroperasi:</span>
-                    <span className="line-v">{formData.premiseAddress || formData.residentialAddress}</span>
-                  </div>
-
-                  <div className="cert-line">
-                    <span className="line-k">Tarikh Pengeluaran / Issued Date:</span>
-                    <span className="line-v">{new Date(service.submissionRecord?.submittedAt || Date.now()).toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                  </div>
-
-                  <div className="cert-line">
-                    <span className="line-k">Status Berkanun:</span>
-                    <span className="line-v status-green">AKTIF & SAH DI BAWAH AKTA BERKANUN</span>
-                  </div>
-                </div>
-
-                <div className="cert-stamp-row">
-                  <div className="stamp-qr">
-                    <QrCode size={52} />
-                    <span>Imbas untuk Semakan Rasmi MyGateway Public Ledger</span>
-                  </div>
-                  <div className="stamp-seal">
-                    <div className="seal-ring">
-                      <FileCheck size={24} />
-                      <span>MOHOR RASMI</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="cert-btns">
                   <button
                     type="button"
-                    className="gov-action-btn-back"
-                    onClick={() => window.print()}
+                    className="sim-tag-btn"
+                    style={{ background: '#f8fafc', color: '#64748b' }}
+                    onClick={() => handleSetPhase('ready_to_apply')}
+                    title="Reset back to initial unsubmitted form"
                   >
-                    <Printer size={15} />
-                    <span>Cetak / Print</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="gov-action-btn-submit"
-                    onClick={() => alert('Sijil PDF rasmi berjaya dimuat turun.')}
-                  >
-                    <Download size={15} />
-                    <span>Muat Turun Sijil PDF Rasmi</span>
+                    📝 Reset to Form
                   </button>
                 </div>
               </div>
+
             </div>
           )}
 

@@ -950,53 +950,60 @@ const ApplicationsPage = ({
               </div>
 
               {/* ════════════════════════════════════════════════════════════════
-                  MAIN 3-STAGE HORIZONTAL TIMELINE STEPPER
-                  [1. Eligibility Check] ──── [2. Services & Application] ──── [3. Completed]
+                  MAIN 4-STAGE HORIZONTAL TIMELINE STEPPER
+                  [1. Eligibility Check] ──── [2. Preparation] ──── [3. Services & Application] ──── [4. Completed]
                  ════════════════════════════════════════════════════════════════ */}
               <div className="horizontal-timeline-container">
                 <div className="timeline-stepper-track">
-                  {mainTimelineStages.map((stage, i) => {
+                  {/* Continuous Background Line Track Behind Circle Nodes */}
+                  <div className="timeline-stepper-bg-track">
+                    <div
+                      className="timeline-stepper-progress-fill"
+                      style={{
+                        width: `${
+                          allServicesCompleted
+                            ? 100
+                            : (isFullyEligible && isPreparationCompleted) || currentStage >= 2
+                            ? 66.6
+                            : isFullyEligible || currentStage >= 1
+                            ? 33.3
+                            : 0
+                        }%`
+                      }}
+                    />
+                  </div>
+
+                  {/* 4 Stage Nodes */}
+                  {mainTimelineStages.map((stage) => {
                     const isSelected = currentStage === stage.index;
                     const isUnlocked = stage.isUnlocked;
                     const isCompleted = stage.isCompleted;
-                    const hasNext = i < mainTimelineStages.length - 1;
 
                     return (
-                      <React.Fragment key={stage.index}>
-                        {/* Stepper Node */}
-                        <div
-                          className={`timeline-step-node ${isSelected ? 'node-selected' : ''} ${isCompleted ? 'node-completed' : ''} ${!isUnlocked ? 'node-locked' : 'node-unlocked'}`}
-                          onClick={() => {
-                            if (isUnlocked) {
-                              setCurrentStage(stage.index);
-                            }
-                          }}
-                        >
-                          <div className="node-circle-btn">
-                            {isCompleted ? (
-                              <Check size={18} className="node-icon-completed" />
-                            ) : !isUnlocked ? (
-                              <Lock size={16} className="node-icon-locked" />
-                            ) : (
-                              stage.icon
-                            )}
-                          </div>
-
-                          <div className="node-label-wrap">
-                            <span className="node-step-num">Step {stage.index + 1}</span>
-                            <span className="node-step-title">{stage.shortTitle}</span>
-                          </div>
+                      <div
+                        key={stage.index}
+                        className={`timeline-step-node ${isSelected ? 'node-selected' : ''} ${isCompleted ? 'node-completed' : ''} ${!isUnlocked ? 'node-locked' : 'node-unlocked'}`}
+                        onClick={() => {
+                          if (isUnlocked) {
+                            setCurrentStage(stage.index);
+                          }
+                        }}
+                      >
+                        <div className="node-circle-btn">
+                          {isCompleted ? (
+                            <Check size={20} className="node-icon-completed" />
+                          ) : !isUnlocked ? (
+                            <Lock size={18} className="node-icon-locked" />
+                          ) : (
+                            stage.icon
+                          )}
                         </div>
 
-                        {/* Connecting Line Segment with Milestone Dots */}
-                        {hasNext && (
-                          <div className={`timeline-connector-segment ${mainTimelineStages[i + 1]?.isUnlocked ? 'segment-active' : 'segment-locked'}`}>
-                            <span className="segment-micro-dot"></span>
-                            <div className="segment-line-fill"></div>
-                            <span className="segment-micro-dot"></span>
-                          </div>
-                        )}
-                      </React.Fragment>
+                        <div className="node-label-wrap">
+                          <span className="node-step-num">Step {stage.index + 1}</span>
+                          <span className="node-step-title">{stage.shortTitle}</span>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
@@ -1406,14 +1413,16 @@ const ApplicationsPage = ({
               VIEW 3: DEDICATED FULL-PAGE SERVICE WORKSPACE (NO POPUP MODAL)
              ════════════════════════════════════════════════════════════════════ */}
           {viewMode === 'service' && selectedService && activeApp && (
-            <ServiceWorkspaceView
-              service={selectedService}
-              journey={activeApp?.journey}
-              activeApp={activeApp}
-              username={username}
-              onBack={handleBackFromService}
-              onUpdateServiceStatus={handleUpdateServiceStatus}
-            />
+            <ErrorBoundary>
+              <ServiceWorkspaceView
+                service={selectedService}
+                journey={activeApp?.journey}
+                activeApp={activeApp}
+                username={username}
+                onBack={handleBackFromService}
+                onUpdateServiceStatus={handleUpdateServiceStatus}
+              />
+            </ErrorBoundary>
           )}
 
         </div>
