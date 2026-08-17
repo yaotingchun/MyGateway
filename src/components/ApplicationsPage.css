@@ -739,9 +739,12 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   STAGE 0: ELIGIBILITY CHECK
+   MAIN STAGES CARD CONTAINERS
    ════════════════════════════════════════════════════════════════════════ */
-.phase-section.phase-focused-step {
+.phase-section,
+.phase-section.phase-focused-step,
+.phase-section.prep-module-section,
+.phase-section.services-module-section {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 18px;

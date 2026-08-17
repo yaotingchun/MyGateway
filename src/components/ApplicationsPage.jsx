@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import Navbar from './Navbar';
 import ServiceWorkspaceView from './ServiceWorkspaceView';
+import PreparationPhaseView from './PreparationPhaseView';
 import {
   getLocalActiveApplications,
   saveLocalActiveApplications,
@@ -50,6 +51,43 @@ import {
 } from '../services/journeyService';
 import { getProfile, evaluateEligibilityCriteria } from '../utils/profileStore';
 import './ApplicationsPage.css';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('[ApplicationsPage ErrorBoundary caught]:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '24px', background: '#fee2e2', color: '#991b1b', borderRadius: '12px', margin: '20px', border: '1px solid #f87171' }}>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 600 }}>Ralat Paparan Modul / Module Render Error</h3>
+          <p style={{ margin: '0 0 12px 0', fontSize: '0.9rem' }}>{this.state.error?.message || this.state.error?.toString()}</p>
+          <button
+            type="button"
+            style={{ padding: '8px 16px', background: '#991b1b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              if (this.props.onReset) this.props.onReset();
+            }}
+          >
+            Muat Semula / Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const DEFAULT_SAMPLE_APPS = [
   {
@@ -230,8 +268,9 @@ const ApplicationsPage = ({
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'in_progress' | 'eligible' | 'completed'
   const [citizenProfile, setCitizenProfile] = useState(null);
 
-  // Main 3-stage timeline stepper (0: Eligibility Check, 1: Services & Application, 2: Completed)
+  // Main 4-stage timeline stepper (0: Eligibility Check, 1: Preparation, 2: Services & Application, 3: Completed)
   const [currentStage, setCurrentStage] = useState(0);
+  const [isPreparationCompleted, setIsPreparationCompleted] = useState(false);
 
   // Selected Service for Workspace Modal
   const [selectedService, setSelectedService] = useState(null);
@@ -305,20 +344,22 @@ const ApplicationsPage = ({
     setAppToDelete(null);
   };
 
-  // Determine stage based on application state
+  // Determine stage based on application state (4 stages: 0=Eligibility, 1=Preparation, 2=Services, 3=Completed)
   const determineInitialStage = (app) => {
     if (!app) return;
     if (!app.eligibility?.isEligible) {
-      setCurrentStage(0); // Stage 1: Eligibility Check
+      setCurrentStage(0); // Stage 0: Eligibility Check
       return;
     }
 
     const steps = app.journey?.steps || [];
     const allDone = steps.length > 0 && steps.every((s) => s.status === 'completed');
     if (allDone) {
-      setCurrentStage(2); // Stage 3: Completed
+      setCurrentStage(3); // Stage 3: Completed
+    } else if (isPreparationCompleted) {
+      setCurrentStage(2); // Stage 2: Services & Application
     } else {
-      setCurrentStage(1); // Stage 2: Services & Application
+      setCurrentStage(1); // Stage 1: Preparation
     }
   };
 
@@ -384,7 +425,7 @@ const ApplicationsPage = ({
     }
   };
 
-  // Confirm eligibility and automatically unlock Stage 1 (Services & Application)
+  // Confirm eligibility and automatically advance to Stage 1 (Preparation)
   const handleConfirmEligibility = async () => {
     if (!activeApp) return;
 
@@ -405,9 +446,16 @@ const ApplicationsPage = ({
       setApplications((prev) =>
         prev.map((a) => (a.id === updatedApp.id ? updatedApp : a))
       );
-      // Advance to Services & Application stage
+      // Advance to Preparation stage
       setCurrentStage(1);
     }
+  };
+
+  // Advance from Stage 1 (Preparation) to Stage 2 (Services & Application)
+  const handleCompletePreparation = () => {
+    setIsPreparationCompleted(true);
+    setCurrentStage(2);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Open Service Workspace (Full page transition, no popout modal)
@@ -483,7 +531,7 @@ const ApplicationsPage = ({
       // Check if all steps are now completed
       const allCompleted = refreshedSteps.every((s) => s.status === 'completed');
       if (allCompleted) {
-        setCurrentStage(2); // Advance to Completed
+        setCurrentStage(3); // Advance to Completed (Stage 3)
       }
 
       // Update selectedService reference if modal is open
@@ -500,11 +548,13 @@ const ApplicationsPage = ({
     return acc + steps.filter((s) => s.status === 'completed').length;
   }, 0);
 
-  // Filtered applications list (for viewMode === 'list')
+  // Filter applications in history view
   const filteredApps = applications.filter((app) => {
     const matchesSearch =
-      app.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      !searchQuery ||
+      app.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (app.agencies && app.agencies.some((ag) => ag.toLowerCase().includes(searchQuery.toLowerCase())));
 
     if (!matchesSearch) return false;
@@ -533,7 +583,7 @@ const ApplicationsPage = ({
   const completedServicesCount = rawSteps.filter((s) => s.status === 'completed').length;
   const allServicesCompleted = rawSteps.length > 0 && completedServicesCount === rawSteps.length;
 
-  // Smart Sorting for Services in Stage 1:
+  // Smart Sorting for Services in Stage 2:
   // 1. Processable / In Progress (Review Required, Ready, Processing, Rejected) on TOP
   // 2. Completed in Middle
   // 3. Locked (dependencies not met) on BOTTOM
@@ -556,7 +606,7 @@ const ApplicationsPage = ({
     return [...rawSteps].sort((a, b) => getPriority(a.status) - getPriority(b.status));
   }, [rawSteps]);
 
-  // Filtered services inside Stage 1
+  // Filtered services inside Stage 2
   const displayedServices = sortedServices.filter((s) => {
     if (servicesFilter === 'processable') {
       return s.status === 'ready_to_apply' || s.status === 'pending' || s.status === 'processing' || s.status === 'review_required' || s.status === 'rejected';
@@ -570,28 +620,36 @@ const ApplicationsPage = ({
     return true;
   });
 
-  // 3 Main Stepper Timeline Stages Configuration
+  // 4 Main Stepper Timeline Stages Configuration
   const mainTimelineStages = [
     {
       index: 0,
-      title: 'Eligibility Check',
-      shortTitle: 'Eligibility Check',
+      title: isMalay ? 'Semakan Kelayakan' : 'Eligibility Check',
+      shortTitle: isMalay ? 'Kelayakan' : 'Eligibility Check',
       icon: <Search size={18} />,
       isCompleted: isFullyEligible,
       isUnlocked: true,
     },
     {
       index: 1,
-      title: 'Services & Application',
-      shortTitle: 'Services & Application',
+      title: isMalay ? 'Penyediaan & AI' : 'Preparation',
+      shortTitle: isMalay ? 'Penyediaan' : 'Preparation',
+      icon: <ShieldCheck size={18} />,
+      isCompleted: isFullyEligible && isPreparationCompleted,
+      isUnlocked: isFullyEligible,
+    },
+    {
+      index: 2,
+      title: isMalay ? 'Perkhidmatan & Permohonan' : 'Services & Application',
+      shortTitle: isMalay ? 'Permohonan' : 'Services & Application',
       icon: <Building2 size={18} />,
       isCompleted: allServicesCompleted,
       isUnlocked: isFullyEligible,
     },
     {
-      index: 2,
-      title: 'Completed',
-      shortTitle: 'Completed',
+      index: 3,
+      title: isMalay ? 'Selesai & Rekod' : 'Completed',
+      shortTitle: isMalay ? 'Selesai' : 'Completed',
       icon: <Award size={18} />,
       isCompleted: allServicesCompleted,
       isUnlocked: allServicesCompleted,
@@ -767,9 +825,9 @@ const ApplicationsPage = ({
                           {app.journey?.steps && (
                             <div className="app-agency-tags">
                               {app.journey.steps.map((st) => (
-                                <span key={st.id} className="agency-pill">
+                                <span key={st.id || Math.random()} className="agency-pill">
                                   <Building2 size={12} />
-                                  <span>{st.agency.split('(')[0].trim()}</span>
+                                  <span>{st?.agency ? st.agency.split('(')[0].trim() : 'Agensi'}</span>
                                 </span>
                               ))}
                             </div>
@@ -1032,7 +1090,7 @@ const ApplicationsPage = ({
                         className="confirm-eligibility-btn"
                         onClick={handleConfirmEligibility}
                       >
-                        <span>Confirm Eligibility & Unlock Services Module</span>
+                        <span>{isMalay ? 'Sahkan Kelayakan & Buka Fasa Penyediaan' : 'Confirm Eligibility & Unlock Preparation Phase'}</span>
                         <ArrowRight size={16} />
                       </button>
                     ) : (
@@ -1041,7 +1099,7 @@ const ApplicationsPage = ({
                         className="proceed-next-step-btn"
                         onClick={() => setCurrentStage(1)}
                       >
-                        <span>Proceed to Services & Application</span>
+                        <span>{isMalay ? 'Teruskan ke Fasa Penyediaan' : 'Proceed to Preparation Phase'}</span>
                         <ArrowRight size={16} />
                       </button>
                     )}
@@ -1050,10 +1108,24 @@ const ApplicationsPage = ({
               )}
 
               {/* ════════════════════════════════════════════════════════════════
-                  STAGE 1: SERVICES & APPLICATION MODULE
-                  (Processable on top, Locked on bottom, Process phases)
+                  STAGE 1: PREPARATION PHASE (PROFILE SYNC, GUIDELINES, AI VERIFICATION)
                  ════════════════════════════════════════════════════════════════ */}
               {currentStage === 1 && (
+                <ErrorBoundary>
+                  <PreparationPhaseView
+                    activeApp={activeApp}
+                    username={username}
+                    onCompletePreparation={handleCompletePreparation}
+                    lang={lang}
+                  />
+                </ErrorBoundary>
+              )}
+
+              {/* ════════════════════════════════════════════════════════════════
+                  STAGE 2: SERVICES & APPLICATION MODULE
+                  (Processable on top, Locked on bottom, Process phases)
+                 ════════════════════════════════════════════════════════════════ */}
+              {currentStage === 2 && (
                 <section className="phase-section services-module-section">
                   {/* Module Header */}
                   <div className="services-module-header">
@@ -1062,9 +1134,9 @@ const ApplicationsPage = ({
                         <Building2 size={20} />
                       </div>
                       <div>
-                        <h3 className="services-module-title">Step 2: Services & Application Hub</h3>
+                        <h3 className="services-module-title">Step 3: Services & Application Hub</h3>
                         <p className="services-module-subtitle">
-                          Complete all required agency services below. Ready and in-progress applications are sorted on top. Click any service to open its workspace.
+                          Submit and track all required agency applications below. Ready and in-progress applications are sorted on top. Click any service to open its workspace.
                         </p>
                       </div>
                     </div>
@@ -1233,7 +1305,7 @@ const ApplicationsPage = ({
                     })}
                   </div>
 
-                  {/* Bottom Advancement to Step 3 */}
+                  {/* Bottom Advancement to Step 4 */}
                   {allServicesCompleted && (
                     <div className="services-all-completed-footer">
                       <div className="all-completed-text">
@@ -1247,7 +1319,7 @@ const ApplicationsPage = ({
                       <button
                         type="button"
                         className="proceed-next-step-btn"
-                        onClick={() => setCurrentStage(2)}
+                        onClick={() => setCurrentStage(3)}
                       >
                         <span>View Final Summary & Records</span>
                         <ArrowRight size={16} />
@@ -1258,9 +1330,9 @@ const ApplicationsPage = ({
               )}
 
               {/* ════════════════════════════════════════════════════════════════
-                  STAGE 2: COMPLETED DOSSIER & RECORDS
+                  STAGE 3: COMPLETED DOSSIER & RECORDS
                  ════════════════════════════════════════════════════════════════ */}
-              {currentStage === 2 && (
+              {currentStage === 3 && (
                 <section className="phase-section phase-completed-section">
                   <div className="completed-summary-hero">
                     <div className="completed-trophy-circle">
