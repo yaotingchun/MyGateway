@@ -226,6 +226,182 @@ export async function submitApplicationStep(userId = 'guest', journeyId, stepId,
   };
 }
 
+const LOCAL_STORAGE_ACTIVE_APPS_KEY = 'mygateway_active_applications_v1';
+const LOCAL_STORAGE_SELECTED_APP_KEY = 'mygateway_selected_application_id';
+
+/**
+ * Get all active user applications from local storage
+ */
+export function getLocalActiveApplications() {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_ACTIVE_APPS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+/**
+ * Save active user applications to local storage
+ */
+export function saveLocalActiveApplications(apps) {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_ACTIVE_APPS_KEY, JSON.stringify(apps));
+  } catch (_) {}
+}
+
+/**
+ * Set the currently selected application ID
+ */
+export function setSelectedApplicationId(appId) {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_SELECTED_APP_KEY, appId);
+  } catch (_) {}
+}
+
+/**
+ * Get the currently selected application ID
+ */
+export function getSelectedApplicationId() {
+  try {
+    return localStorage.getItem(LOCAL_STORAGE_SELECTED_APP_KEY) || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Create a new application from AI chat content
+ */
+export async function createApplicationFromChat(userId = 'Jason', { journey, eligibility, query }) {
+  const safeUserId = userId.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const now = new Date();
+  const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+  const appId = `APP-${now.getFullYear()}-${randomSuffix}`;
+
+  const newApp = {
+    id: appId,
+    userId: safeUserId,
+    title: journey?.title || 'Government Application Journey',
+    summary: journey?.summary || 'Step-by-step government agency applications and approvals.',
+    query: query || '',
+    status: 'In Progress',
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
+    eligibility: {
+      summary: eligibility?.summary || 'Please verify the statutory eligibility criteria before proceeding.',
+      criteria: eligibility?.criteria || [
+        { id: 'c1', label: 'Citizenship', requirement: 'Malaysian Citizen with valid MyKad', isMandatory: true },
+        { id: 'c2', label: 'Age Requirement', requirement: 'Aged 18 years old and above', isMandatory: true },
+      ],
+      checkedCriteria: {},
+      isEligible: false,
+    },
+    journey: journey || {
+      id: `journey-${appId}`,
+      title: 'Agency Applications Roadmap',
+      steps: [],
+    },
+  };
+
+  // 1. Save to local storage
+  const currentApps = getLocalActiveApplications();
+  const updatedApps = [newApp, ...currentApps.filter((a) => a.id !== appId)];
+  saveLocalActiveApplications(updatedApps);
+  setSelectedApplicationId(appId);
+
+  // 2. Persist to Firestore
+  try {
+    const appDocRef = doc(db, 'users', safeUserId, 'active_applications', appId);
+    await setDoc(appDocRef, {
+      ...newApp,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn('[JourneyService] Note: Firestore active app save:', err.message);
+  }
+
+  return newApp;
+}
+
+/**
+ * Update eligibility status for an active application
+ */
+export async function updateApplicationEligibility(userId = 'Jason', appId, checkedCriteria, isEligible) {
+  const safeUserId = userId.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const currentApps = getLocalActiveApplications();
+  let updatedApp = null;
+
+  const updatedApps = currentApps.map((app) => {
+    if (app.id === appId) {
+      updatedApp = {
+        ...app,
+        eligibility: {
+          ...app.eligibility,
+          checkedCriteria,
+          isEligible,
+        },
+        updatedAt: new Date().toISOString(),
+      };
+      return updatedApp;
+    }
+    return app;
+  });
+
+  saveLocalActiveApplications(updatedApps);
+
+  try {
+    const appDocRef = doc(db, 'users', safeUserId, 'active_applications', appId);
+    await setDoc(appDocRef, {
+      eligibility: {
+        checkedCriteria,
+        isEligible,
+      },
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+  } catch (err) {
+    console.warn('[JourneyService] Firestore eligibility update note:', err.message);
+  }
+
+  return updatedApp;
+}
+
+/**
+ * Update journey steps within an active application
+ */
+export async function updateApplicationJourney(userId = 'Jason', appId, updatedJourney) {
+  const safeUserId = userId.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const currentApps = getLocalActiveApplications();
+  let updatedApp = null;
+
+  const updatedApps = currentApps.map((app) => {
+    if (app.id === appId) {
+      updatedApp = {
+        ...app,
+        journey: updatedJourney,
+        updatedAt: new Date().toISOString(),
+      };
+      return updatedApp;
+    }
+    return app;
+  });
+
+  saveLocalActiveApplications(updatedApps);
+
+  try {
+    const appDocRef = doc(db, 'users', safeUserId, 'active_applications', appId);
+    await setDoc(appDocRef, {
+      journey: updatedJourney,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+  } catch (err) {
+    console.warn('[JourneyService] Firestore journey update note:', err.message);
+  }
+
+  return updatedApp;
+}
+
 /**
  * Fetch all submitted applications for the current user
  */

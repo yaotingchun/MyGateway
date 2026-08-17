@@ -353,64 +353,42 @@ export default function ApplicationSubmissionModal({
                 {/* 3. PBT Local Council Premise License Form */}
                 {step.id?.includes('pbt') && (
                   <>
-                    {/* Highlighted Autofill from Step 1 */}
-                    <div className="form-group full-width autofill-highlight-box">
-                      <div className="autofill-header">
-                        <Sparkles size={14} className="sparkle-gold" />
-                        <span>Autofilled from Step 1 (SSM Registration)</span>
-                      </div>
-                      <div className="autofill-field-row">
-                        <div>
-                          <label>SSM Registration Number</label>
-                          <input
-                            type="text"
-                            required
-                            className="input-autofilled"
-                            value={formData.ssmNumber || ''}
-                            onChange={(e) => handleChange('ssmNumber', e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <label>Registered Business Name</label>
-                          <input
-                            type="text"
-                            required
-                            className="input-autofilled"
-                            value={formData.businessName || ''}
-                            onChange={(e) => handleChange('businessName', e.target.value)}
-                          />
-                        </div>
-                      </div>
+                    <div className="form-group half-width">
+                      <label>SSM Registration Number *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.ssmNumber || ''}
+                        onChange={(e) => handleChange('ssmNumber', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group half-width">
+                      <label>Registered Business Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.businessName || ''}
+                        onChange={(e) => handleChange('businessName', e.target.value)}
+                      />
                     </div>
 
-                    {/* Highlighted Autofill from Step 2 */}
-                    <div className="form-group full-width autofill-highlight-box">
-                      <div className="autofill-header">
-                        <Sparkles size={14} className="sparkle-gold" />
-                        <span>Autofilled from Step 2 (Food Handler Training)</span>
-                      </div>
-                      <div className="autofill-field-row">
-                        <div>
-                          <label>SLPM Training Cert No.</label>
-                          <input
-                            type="text"
-                            required
-                            className="input-autofilled"
-                            value={formData.slpmCert || ''}
-                            onChange={(e) => handleChange('slpmCert', e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <label>Typhoid Card No.</label>
-                          <input
-                            type="text"
-                            required
-                            className="input-autofilled"
-                            value={formData.typhoidCard || ''}
-                            onChange={(e) => handleChange('typhoidCard', e.target.value)}
-                          />
-                        </div>
-                      </div>
+                    <div className="form-group half-width">
+                      <label>SLPM Training Cert No. *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.slpmCert || ''}
+                        onChange={(e) => handleChange('slpmCert', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group half-width">
+                      <label>Typhoid Card No. *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.typhoidCard || ''}
+                        onChange={(e) => handleChange('typhoidCard', e.target.value)}
+                      />
                     </div>
 
                     <div className="form-group half-width">
@@ -471,16 +449,11 @@ export default function ApplicationSubmissionModal({
                       />
                     </div>
 
-                    <div className="form-group half-width autofill-highlight-box">
-                      <div className="autofill-header">
-                        <Sparkles size={14} className="sparkle-gold" />
-                        <span>Autofilled SSPN Account</span>
-                      </div>
+                    <div className="form-group half-width">
                       <label>Simpan SSPN Account No. *</label>
                       <input
                         type="text"
                         required
-                        className="input-autofilled"
                         value={formData.sspnNumber || ''}
                         onChange={(e) => handleChange('sspnNumber', e.target.value)}
                       />

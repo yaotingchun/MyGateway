@@ -3,6 +3,7 @@ import HeroSection from './components/HeroSection';
 import LoginModal from './components/LoginModal';
 import HomePage from './components/HomePage';
 import ServicesPage from './components/ServicesPage';
+import ApplicationsPage from './components/ApplicationsPage';
 import AIAssistantPage from './components/AIAssistantPage';
 import ProfilePage from './components/ProfilePage';
 import OnboardingWizard from './components/OnboardingWizard';
@@ -13,7 +14,7 @@ import bgImage from './assets/kolaxus_background3.webp';
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState('');
-  const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'ai' | 'applications' | 'profile'
+  const [currentPage, setCurrentPage] = useState('home'); // 'home' | 'ai' | 'applications' | 'services' | 'profile'
   const [aiInitialQuery, setAiInitialQuery] = useState('');
   const [lang, setLang] = useState('EN');
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -71,6 +72,16 @@ function App() {
         />
       );
     } else if (currentPage === 'applications') {
+      pageContent = (
+        <ApplicationsPage
+          username={currentUser || 'Jason'}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+          lang={lang}
+          onLangChange={setLang}
+        />
+      );
+    } else if (currentPage === 'services') {
       pageContent = (
         <ServicesPage
           username={currentUser || 'Jason'}

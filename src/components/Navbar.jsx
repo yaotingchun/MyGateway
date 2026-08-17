@@ -9,10 +9,11 @@ const LANGS = [
 ];
 
 const NAV_LINKS = [
-  { id: 'home', label: 'Home' },
-  { id: 'ai', label: 'AI Assistant' },
-  { id: 'applications', label: 'Applications' },
-  { id: 'profile', label: 'Profile' },
+  { id: 'home', label: 'Home', labelMY: 'Utama' },
+  { id: 'ai', label: 'AI Assistant', labelMY: 'Pembantu AI' },
+  { id: 'applications', label: 'Applications', labelMY: 'Permohonan' },
+  { id: 'services', label: 'Services', labelMY: 'Perkhidmatan' },
+  { id: 'profile', label: 'Profile', labelMY: 'Profil' },
 ];
 
 const Navbar = ({ username, onLogout, activePage = 'home', onNavigate, lang = 'EN', onLangChange }) => {
@@ -50,7 +51,7 @@ const Navbar = ({ username, onLogout, activePage = 'home', onNavigate, lang = 'E
                 className={`nb-link ${activePage === link.id ? 'nb-link-active' : ''}`}
                 onClick={() => handleNavClick(link.id)}
               >
-                {link.label}
+                {lang === 'MY' && link.labelMY ? link.labelMY : link.label}
               </button>
             </li>
           ))}

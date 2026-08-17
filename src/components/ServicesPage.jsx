@@ -502,7 +502,7 @@ const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLo
         username={username}
         onLogout={onLogout}
         onNavigate={onNavigate}
-        activePage="applications"
+        activePage="services"
         lang={lang}
         onLangChange={onLangChange}
       />

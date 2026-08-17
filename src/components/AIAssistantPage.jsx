@@ -27,20 +27,15 @@ import {
   MapPin,
   Compass,
   Mic,
-  MicOff
+  MicOff,
+  ArrowRight
 } from 'lucide-react';
 import { marked } from 'marked';
 import Navbar from './Navbar';
 import { STARTER_PROMPTS } from './govAiData';
 import { askGovAi } from '../services/aiService';
 import { startDictation, stopDictation } from '../services/speechService';
-import PlanJourneyCard from './PlanJourneyCard';
-import ApplicationSubmissionModal from './ApplicationSubmissionModal';
-import {
-  getAccumulatedArtifacts,
-  saveUserJourney,
-  loadUserJourney
-} from '../services/journeyService';
+import { createApplicationFromChat } from '../services/journeyService';
 import './AIAssistantPage.css';
 
 // Configure marked with GitHub-flavored markdown and line breaks
@@ -63,18 +58,11 @@ marked.use({ renderer });
 const renderMarkdown = (content) => {
   if (!content) return '';
   try {
-    let cleanText = typeof content === 'string' ? content : JSON.stringify(content);
-    // Strip accidental JSON keys leaking into content text
-    cleanText = cleanText
-      .replace(/",\s*"(?:eligibility|journey|actionCards|suggestions|checklist)":\s*[\s\S]*$/i, '')
-      .replace(/\s*"(?:eligibility|journey|actionCards|suggestions|checklist)":\s*\{[\s\S]*$/i, '')
-      .replace(/\s*"(?:eligibility|journey|actionCards|suggestions|checklist)":\s*\[[\s\S]*$/i, '')
-      .replace(/^\s*\{\s*"agency"[^}]*?"content"\s*:\s*"/i, '')
-      .trim();
-
-    return marked.parse(cleanText);
+    let cleanContent = typeof content === 'string' ? content : String(content);
+    cleanContent = cleanContent.replace(/\{\s*"(?:journey|eligibility|actionCards|content)[\s\S]*$/i, '');
+    return marked.parse(cleanContent);
   } catch (err) {
-    console.error('Error rendering markdown:', err);
+    console.error('Markdown rendering error:', err);
     return content;
   }
 };
@@ -93,11 +81,6 @@ const AIAssistantPage = ({
   const [copiedMessageId, setCopiedMessageId] = useState(null);
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
   const [feedbackGiven, setFeedbackGiven] = useState({});
-  const [checkedCriteria, setCheckedCriteria] = useState({});
-  const [activeJourney, setActiveJourney] = useState(null);
-  const [submittingStep, setSubmittingStep] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [visibleJourneys, setVisibleJourneys] = useState({});
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState(null);
 
@@ -116,63 +99,23 @@ const AIAssistantPage = ({
     };
   }, []);
 
-  // Toggle interactive criteria checkbox
-  const handleToggleCriterion = (msgId, criterionId) => {
-    const key = `${msgId}-${criterionId}`;
-    setCheckedCriteria((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
-  // Toggle journey visibility for a specific message
-  const handleToggleJourney = (msgId, journeyObj) => {
-    setVisibleJourneys((prev) => ({
-      ...prev,
-      [msgId]: !prev[msgId],
-    }));
-    if (journeyObj) {
-      setActiveJourney(journeyObj);
+  // Handle starting a formal application with MyGateway
+  const handleStartApplication = async (msg) => {
+    try {
+      await createApplicationFromChat(username, {
+        journey: msg.journey,
+        eligibility: msg.eligibility,
+        query: msg.query || '',
+      });
+      if (onNavigate) {
+        onNavigate('applications');
+      }
+    } catch (err) {
+      console.error('Failed to create application from chat:', err);
+      if (onNavigate) {
+        onNavigate('applications');
+      }
     }
-  };
-
-  // Open in-app application submission modal
-  const handleOpenSubmission = (step, journeyObj) => {
-    setSubmittingStep(step);
-    if (journeyObj) {
-      setActiveJourney(journeyObj);
-    }
-    setIsModalOpen(true);
-  };
-
-  // Handle successful application submission
-  const handleSubmitSuccess = (result) => {
-    if (result.updatedJourney) {
-      setActiveJourney(result.updatedJourney);
-    }
-
-    const aiMsgId = 'ai-ack-' + Date.now();
-    const cleanStepTitle = submittingStep?.title || 'Application';
-
-    const ackMessage = {
-      id: aiMsgId,
-      sender: 'ai',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      agency: submittingStep?.agency || 'MyGateway AI Orchestrator',
-      content: `### 🎉 ${cleanStepTitle} Submitted Successfully!\n\nYour application has been registered with official reference ID: **\`${result.referenceNumber}\`**.\n\n✨ **Generated Output Documents**:\n${Object.entries(result.generatedOutputs || {}).filter(([k]) => !k.endsWith('_ref') && !k.endsWith('_submittedAt')).map(([k, v]) => `- **${k.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())}**: \`${v}\``).join('\n')}\n\n🔓 **Downstream Steps Unlocked**: Prerequisite data has been auto-linked. You can now proceed with subsequent applications in your journey below.`,
-      journey: result.updatedJourney,
-      actionCards: [],
-      suggestions: [
-        'What is the next step in my journey?',
-        'How can I view my registered SSM certificate?',
-        'How long does the local council approval take?'
-      ],
-      checklist: [],
-      eligibility: null,
-    };
-
-    setVisibleJourneys((prev) => ({ ...prev, [aiMsgId]: true }));
-    setMessages((prev) => [...prev, ackMessage]);
   };
 
   // Time-based greeting
@@ -201,9 +144,6 @@ const AIAssistantPage = ({
       window.speechSynthesis.cancel();
     }
     setSpeakingMessageId(null);
-    if (activeJourney) {
-      saveUserJourney(username, activeJourney);
-    }
   };
 
   // Voice dictation toggle
@@ -271,18 +211,13 @@ const AIAssistantPage = ({
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         agency: responseData.agency,
         content: responseData.content,
-        eligibility: responseData.eligibility,
-        journey: responseData.journey,
-        actionCards: responseData.actionCards,
-        suggestions: responseData.suggestions,
-        checklist: responseData.checklist,
+        query: query,
+        eligibility: responseData.eligibility || null,
+        journey: responseData.journey || null,
+        actionCards: responseData.actionCards || [],
+        suggestions: responseData.suggestions || [],
+        checklist: responseData.checklist || [],
       };
-
-      if (responseData.journey) {
-        setActiveJourney(responseData.journey);
-        setVisibleJourneys((prev) => ({ ...prev, [aiMsgId]: true }));
-        saveUserJourney(username || 'guest', responseData.journey.id, responseData.journey);
-      }
 
       setMessages((prev) => [...prev, aiMessage]);
     } catch (err) {
@@ -568,105 +503,30 @@ const AIAssistantPage = ({
                           __html: renderMarkdown(msg.content)
                         }}
                       />
-
-                      {/* Interactive Eligibility Check Card if present */}
-                      {msg.eligibility && msg.eligibility.criteria && msg.eligibility.criteria.length > 0 && (
-                        <div className="ai-eligibility-card">
-                          <div className="eligibility-card-header">
-                            <div className="eligibility-title-wrap">
-                              <div className="eligibility-icon-badge">
-                                <ShieldCheck size={18} />
-                              </div>
-                              <div>
-                                <h4 className="eligibility-title">
-                                  {msg.eligibility.title || 'Eligibility & Qualification Check'}
-                                </h4>
-                                {msg.eligibility.summary && (
-                                  <p className="eligibility-summary">{msg.eligibility.summary}</p>
-                                )}
-                              </div>
+                      {/* Call to action: Start Application with MyGateway */}
+                      {(msg.journey || msg.eligibility) && (
+                        <div className="ai-start-app-prompt-card">
+                          <div className="start-app-prompt-content">
+                            <div className="start-app-prompt-badge">
+                              <Sparkles size={14} />
+                              <span>MyGateway Application Assistant</span>
                             </div>
-                            <span className="eligibility-badge-pill">
-                              <UserCheck size={13} />
-                              <span>Pre-Check</span>
-                            </span>
+                            <h4 className="start-app-prompt-title">
+                              {msg.journey?.title || 'Start Government Application'}
+                            </h4>
+                            <p className="start-app-prompt-desc">
+                              Would you like to start this application with MyGateway? We will guide you through the statutory eligibility check, required preparation, and sequential agency submissions.
+                            </p>
                           </div>
-
-                          <div className="eligibility-criteria-list">
-                            {msg.eligibility.criteria.map((c, cIdx) => {
-                              const cId = c.id || `c-${cIdx}`;
-                              const isChecked = !!checkedCriteria[`${msg.id}-${cId}`];
-                              return (
-                                <div
-                                  key={cId}
-                                  className={`eligibility-criterion-item ${isChecked ? 'item-checked' : ''}`}
-                                  onClick={() => handleToggleCriterion(msg.id, cId)}
-                                >
-                                  <div className="criterion-checkbox">
-                                    {isChecked ? (
-                                      <CheckCircle2 size={18} className="check-icon-active" />
-                                    ) : (
-                                      <div className="check-box-empty" />
-                                    )}
-                                  </div>
-                                  <div className="criterion-body">
-                                    <span className="criterion-label">{c.label}:</span>{' '}
-                                    <span className="criterion-req">{c.requirement}</span>
-                                  </div>
-                                  {c.isMandatory && (
-                                    <span className="criterion-tag-mandatory">Required</span>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          {/* Live Status Calculation */}
-                          {(() => {
-                            const total = msg.eligibility.criteria.length;
-                            const checkedCount = msg.eligibility.criteria.filter((c, i) => checkedCriteria[`${msg.id}-${c.id || `c-${i}`}`]).length;
-                            const allDone = checkedCount === total && total > 0;
-                            return (
-                              <div className={`eligibility-status-footer ${allDone ? 'status-all-pass' : ''}`}>
-                                <div className="status-progress-info">
-                                  <span className="status-count-text">
-                                    {allDone
-                                      ? '🎉 Excellent! You meet all listed eligibility requirements for this application.'
-                                      : `${checkedCount} of ${total} criteria confirmed. Click to check off items you meet.`}
-                                  </span>
-                                </div>
-                                <div className="eligibility-progress-bar">
-                                  <div
-                                    className="eligibility-progress-fill"
-                                    style={{ width: `${(checkedCount / total) * 100}%` }}
-                                  />
-                                </div>
-                                {msg.journey && (
-                                  <button
-                                    type="button"
-                                    className="plan-journey-trigger-btn"
-                                    onClick={() => handleToggleJourney(msg.id, msg.journey)}
-                                  >
-                                    <Sparkles size={16} />
-                                    <span>
-                                      {visibleJourneys[msg.id]
-                                        ? 'Hide Application Roadmap'
-                                        : '🚀 Plan Application Journey & Procedures'}
-                                    </span>
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })()}
+                          <button
+                            type="button"
+                            className="start-app-action-btn"
+                            onClick={() => handleStartApplication(msg)}
+                          >
+                            <span>Start Application with MyGateway</span>
+                            <ArrowRight size={16} />
+                          </button>
                         </div>
-                      )}
-
-                      {/* Interactive Dependency-Aware Plan Journey Card */}
-                      {msg.journey && (visibleJourneys[msg.id] !== false) && (
-                        <PlanJourneyCard
-                          journey={activeJourney && activeJourney.id === msg.journey?.id ? activeJourney : msg.journey}
-                          onStartSubmission={(step) => handleOpenSubmission(step, msg.journey)}
-                        />
                       )}
 
                       {/* Checklist Box if available */}
@@ -865,17 +725,6 @@ const AIAssistantPage = ({
             </div>
           </div>
         )}
-
-        {/* Application Online Submission Modal */}
-        <ApplicationSubmissionModal
-          isOpen={isModalOpen}
-          step={submittingStep}
-          journey={activeJourney}
-          username={username}
-          accumulatedArtifacts={getAccumulatedArtifacts(activeJourney)}
-          onClose={() => setIsModalOpen(false)}
-          onSubmitSuccess={handleSubmitSuccess}
-        />
 
       </div>
     </div>
