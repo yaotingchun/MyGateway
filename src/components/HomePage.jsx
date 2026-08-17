@@ -58,10 +58,9 @@ const APPLICATIONS = [
 ];
 
 const RECOMMENDATIONS = [
-  { icon: '🎓', text: "You're eligible to apply for Education Assistance", tag: 'New' },
-  { icon: '🚗', text: 'Your driving licence expires in 14 days', tag: 'Urgent' },
-  { icon: '🏠', text: 'You may be eligible for Housing Assistance', tag: 'Recommended' },
-  { icon: '💼', text: 'You have an upcoming tax-related requirement', tag: 'Reminder' },
+  { icon: '🎓', text: 'PTPTN Loan Application for Higher Education', tag: 'Recommended' },
+  { icon: '💰', text: 'Claim your RM200 e-Belia Rahmah credit', tag: 'New' },
+  { icon: '🗳️', text: 'Check your SPR Voter Registration Status', tag: 'Reminder' },
 ];
 
 const NOTIFICATIONS = [
@@ -195,6 +194,7 @@ const HomePage = ({ username, onLogout, onNavigate, onAskAi }) => {
             </div>
           </div>
         </section>
+
 
         {/* ── Two-col: Categories + Notifications ── */}
         <div className="hp-two-col">
@@ -331,26 +331,6 @@ const HomePage = ({ username, onLogout, onNavigate, onAskAi }) => {
                 </div>
               );
             })}
-          </div>
-        </section>
-
-        {/* ── Recommended for You ── */}
-        <section className="hp-section hp-recommended">
-          <div className="hp-section-header">
-            <h2 className="hp-section-title">Recommended for You</h2>
-            <p className="hp-section-sub">Based on your profile &amp; activity</p>
-          </div>
-          <div className="hp-reco-grid">
-            {RECOMMENDATIONS.map((r, i) => (
-              <div key={i} className="hp-reco-card">
-                <div className="hp-reco-top">
-                  <span className="hp-reco-icon">{r.icon}</span>
-                  <span className={`hp-reco-tag hp-reco-tag-${r.tag.toLowerCase()}`}>{r.tag}</span>
-                </div>
-                <p className="hp-reco-text">{r.text}</p>
-                <button className="hp-reco-btn">Learn More →</button>
-              </div>
-            ))}
           </div>
         </section>
 

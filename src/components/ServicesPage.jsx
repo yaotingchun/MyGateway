@@ -3,6 +3,9 @@ import { ExternalLink, Search, X, Loader2, ArrowLeft, Phone, Mail, Globe, Messag
 import { getServices } from '../services/serviceService';
 import Navbar from './Navbar';
 import './ServicesPage.css';
+import './HomePage.css'; // For the recommendations styling
+
+
 
 // ── Category config (matches HomePage) ────────────────────────────────────────
 const CATEGORIES = [
@@ -35,7 +38,7 @@ const TRANSLATIONS = {
     notStarted:       'Not Started',
     showing:          (n) => `Showing ${n} result${n !== 1 ? 's' : ''}`,
     available:        (n) => `${n} services available`,
-    loading:          'Loading services from Firestore…',
+    loading:          'Loading services…',
     empty:            'No services match your search. Try a different keyword or category.',
     loadMore:         (n) => `Load more (${n} remaining)`,
     // Card
@@ -72,7 +75,7 @@ const TRANSLATIONS = {
     notStarted:       'Belum Dimulakan',
     showing:          (n) => `Menunjukkan ${n} keputusan`,
     available:        (n) => `${n} perkhidmatan tersedia`,
-    loading:          'Memuatkan perkhidmatan daripada Firestore…',
+    loading:          'Memuatkan perkhidmatan…',
     empty:            'Tiada perkhidmatan yang sepadan. Cuba kata kunci atau kategori lain.',
     loadMore:         (n) => `Muatkan lagi (${n} lagi)`,
     // Card
@@ -496,6 +499,19 @@ const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLo
 
   const clearSearch = () => setSearch('');
 
+  const recommendedServicesRaw = allServices.filter(s => 
+    (s.name && s.name.toLowerCase().includes('ptptn')) || 
+    (s.name && s.name.toLowerCase().includes('belia')) || 
+    (s.name && s.name.toLowerCase().includes('spr')) ||
+    (s.name && s.name.toLowerCase().includes('bantuan')) ||
+    (s.name && s.name.toLowerCase().includes('education')) ||
+    (s.name && s.name.toLowerCase().includes('loan'))
+  ).slice(0, 6);
+
+  const finalRecommendations = recommendedServicesRaw.length > 0 
+    ? recommendedServicesRaw 
+    : allServices.slice(0, 6);
+
   return (
     <div className="sp-root">
       <Navbar
@@ -552,9 +568,6 @@ const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLo
             </select>
           </div>
 
-          <button className="sp-filter-btn" onClick={() => {}}>
-            {T.recommended}
-          </button>
 
           <div className="sp-filter-group">
             <select className="sp-filter-select" defaultValue="Status">
@@ -567,13 +580,31 @@ const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLo
           </div>
         </div>
 
+        {/* ── Recommended for You ── */}
+        <section className="hp-section hp-recommended" style={{ marginTop: '20px', padding: '0', background: 'transparent' }}>
+          <div className="hp-section-header">
+            <h2 className="hp-section-title" style={{ fontSize: '1.3rem' }}>Recommended for You</h2>
+            <p className="hp-section-sub">Based on your profile &amp; activity</p>
+          </div>
+          <div className="sp-grid">
+            {finalRecommendations.map((service) => (
+              <ServiceCard key={service.id} service={service} lang={lang} />
+            ))}
+          </div>
+        </section>
+
         {/* ── Results count ── */}
         {!loading && !error && (
-          <p className="sp-count">
-            {activeCategory !== 'All' || search
-              ? T.showing(filtered.length)
-              : T.available(allServices.length)}
-          </p>
+          <div style={{ marginTop: '40px' }}>
+            <div className="hp-section-header">
+              <h2 className="hp-section-title" style={{ fontSize: '1.3rem' }}>Service</h2>
+            </div>
+            <p className="sp-count">
+              {activeCategory !== 'All' || search
+                ? T.showing(filtered.length)
+                : T.available(allServices.length)}
+            </p>
+          </div>
         )}
 
         {/* ── States ── */}
