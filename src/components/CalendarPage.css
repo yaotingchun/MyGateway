@@ -1,0 +1,659 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   CLEAN GOVERNMENT CALENDAR & UPCOMING DEADLINES STYLES
+   MyGateway Unified Malaysian Government Design System
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.gov-calendar-page-root {
+  min-height: 100vh;
+  background-color: #f1f5f9;
+  display: flex;
+  flex-direction: column;
+}
+
+.gov-calendar-main-content {
+  flex: 1;
+  padding: 32px 24px 64px;
+}
+
+.gov-calendar-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── 1. Top Header ── */
+.gov-cal-top-header {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 22px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+  flex-wrap: wrap;
+}
+
+.gov-cal-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.gov-cal-subtitle {
+  font-size: 0.86rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.gov-cal-btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.gov-cal-btn-export:hover {
+  background: #1e293b;
+}
+
+.gov-cal-toast {
+  background: #ecfdf5;
+  border: 1px solid #86efac;
+  color: #166534;
+  padding: 10px 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  animation: fadeInClean 0.18s ease-out;
+}
+
+@keyframes fadeInClean {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 2. Main Two-Column Layout (Identical Card Heights) ── */
+.gov-cal-two-column-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* ── Left Column: Month Calendar Card ── */
+.gov-cal-month-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 470px;
+  box-sizing: border-box;
+}
+
+.month-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.month-label {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.month-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-today-shortcut {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-today-shortcut:hover {
+  background: #e2e8f0;
+}
+
+.btn-arrow-nav {
+  padding: 5px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  cursor: pointer;
+}
+
+.btn-arrow-nav:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.weekdays-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.weekday-text {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.days-number-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: 12px;
+}
+
+.day-box {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.day-box:hover {
+  background: #f1f5f9;
+}
+
+.day-box.day-other-month {
+  color: #cbd5e1;
+}
+
+.day-box.day-active-selected {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.day-dots-wrap {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  position: absolute;
+  bottom: 3px;
+}
+
+.dot-indicator {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+.dot-licenses { background: #2563eb; }
+.dot-tax { background: #7c3aed; }
+.dot-compliance { background: #d97706; }
+.dot-grants { background: #16a34a; }
+.dot-statutory { background: #475569; }
+
+.cal-legend-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* ── Right Column: Upcoming Deadlines Card (Matching Exact Height) ── */
+.gov-cal-deadlines-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+  display: flex;
+  flex-direction: column;
+  height: 470px;
+  box-sizing: border-box;
+}
+
+.deadlines-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.deadlines-heading {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 2px;
+}
+
+.deadlines-sub {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.count-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 3px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+/* Scrollable Container with Smooth Scrollbar */
+.deadlines-items-scroll-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.deadlines-items-scroll-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.deadlines-items-scroll-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.deadlines-items-scroll-list::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 10px;
+}
+
+.deadlines-items-scroll-list::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+.deadline-row-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  flex-shrink: 0;
+}
+
+.deadline-row-item:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.deadline-row-item.active-row {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+/* Date Block Badge */
+.item-date-badge {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.date-month {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #1e40af;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.date-day {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+  margin: 1px 0;
+}
+
+.date-year {
+  font-size: 0.58rem;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+/* Content Block */
+.item-content-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-top-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.agency-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.horizon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 100px;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.horizon-badge.horizon-high { background: #fee2e2; color: #991b1b; }
+.horizon-badge.horizon-medium { background: #fef3c7; color: #92400e; }
+.horizon-badge.horizon-normal { background: #e0f2fe; color: #0369a1; }
+
+.item-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.item-desc {
+  font-size: 0.76rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.35;
+}
+
+/* Action End */
+.item-action-end {
+  flex-shrink: 0;
+}
+
+.btn-view-details {
+  padding: 5px 12px;
+  border-radius: 7px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-view-details:hover {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+/* ── 3. Event Details Modal ── */
+.gov-cal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeInClean 0.15s ease-out;
+}
+
+.gov-cal-modal-box {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+}
+
+.modal-header-bar {
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal-agency-lbl {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #1e40af;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.modal-heading-title {
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.btn-close-modal {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.btn-close-modal:hover {
+  color: #0f172a;
+}
+
+.modal-content-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-deadline-strip {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.strip-lbl {
+  font-size: 0.68rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+  display: block;
+}
+
+.strip-val {
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 1px 0 0;
+}
+
+.strip-val.mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.modal-desc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.desc-heading {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.desc-text {
+  font-size: 0.82rem;
+  color: #475569;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.modal-ref-grid {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ref-cell {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+}
+
+.ref-k {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.ref-v {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.ref-v.mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.modal-footer-bar {
+  padding: 12px 18px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-modal-close {
+  padding: 7px 14px;
+  border-radius: 7px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-modal-action-link {
+  padding: 7px 16px;
+  border-radius: 7px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-modal-action-link:hover {
+  background: #1e293b;
+}
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+  .gov-cal-two-column-layout {
+    grid-template-columns: 1fr;
+  }
+  .gov-cal-month-card,
+  .gov-cal-deadlines-card {
+    height: auto;
+  }
+}

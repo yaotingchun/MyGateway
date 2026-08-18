@@ -3,6 +3,7 @@ import HeroSection from './components/HeroSection';
 import LoginModal from './components/LoginModal';
 import HomePage from './components/HomePage';
 import ServicesPage from './components/ServicesPage';
+import CalendarPage from './components/CalendarPage';
 import ApplicationsPage from './components/ApplicationsPage';
 import AIAssistantPage from './components/AIAssistantPage';
 import ProfilePage from './components/ProfilePage';
@@ -84,6 +85,16 @@ function App() {
     } else if (currentPage === 'services') {
       pageContent = (
         <ServicesPage
+          username={currentUser || 'Jason'}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+          lang={lang}
+          onLangChange={setLang}
+        />
+      );
+    } else if (currentPage === 'calendar') {
+      pageContent = (
+        <CalendarPage
           username={currentUser || 'Jason'}
           onLogout={handleLogout}
           onNavigate={handleNavigate}

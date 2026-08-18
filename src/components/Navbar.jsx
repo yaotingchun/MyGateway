@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { id: 'ai', label: 'AI Assistant', labelMY: 'Pembantu AI' },
   { id: 'applications', label: 'Applications', labelMY: 'Permohonan' },
   { id: 'services', label: 'Services', labelMY: 'Perkhidmatan' },
+  { id: 'calendar', label: 'Calendar', labelMY: 'Kalendar' },
   { id: 'profile', label: 'Profile', labelMY: 'Profil' },
 ];
 
