@@ -1302,3 +1302,58 @@
     justify-content: center;
   }
 }
+
+/* ── Completed Service Summary Container & Insights Strip ── */
+.completed-service-summary-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.gov-completed-insights-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.insight-card-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.insight-card-item.highlight-ai {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.insight-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.insight-icon {
+  color: #0284c7;
+}
+
+.insight-title {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.insight-desc {
+  font-size: 0.8rem;
+  color: #475569;
+  line-height: 1.4;
+  margin: 0;
+}
+

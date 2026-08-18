@@ -19,7 +19,10 @@ import {
   Printer,
   FileCheck,
   User,
-  Briefcase
+  Briefcase,
+  MapPin,
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 import './ServiceWorkspaceView.css';
 
@@ -1156,23 +1159,77 @@ const ServiceWorkspaceView = ({
                 </div>
               </div>
 
-              {/* 4. COMPLETED QUICK ACTION (View Certificate) */}
+              {/* 4. COMPLETED QUICK ACTION & STATUTORY HORIZON */}
               {service.status === 'completed' && (
-                <div className="cert-ready-cta-box">
-                  <div className="cta-left">
-                    <Award size={24} className="cta-icon" />
-                    <div>
-                      <h4>Official Registration Certificate is Ready</h4>
-                      <p>Your official digital certificate with secure verification QR code is available.</p>
+                <div className="completed-service-summary-container">
+                  <div className="cert-ready-cta-box">
+                    <div className="cta-left">
+                      <Award size={24} className="cta-icon" />
+                      <div>
+                        <h4>Official Registration Certificate is Ready & Active</h4>
+                        <p>Your official digital certificate with secure verification QR code has been issued and entered into the National Digital Ledger.</p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="view-cert-cta-btn"
+                        onClick={() => setShowCertView(true)}
+                      >
+                        View Official Certificate
+                      </button>
+                      <button
+                        type="button"
+                        className="view-cert-cta-btn"
+                        style={{ background: '#047857' }}
+                        onClick={() => alert(`Official PDF Certificate downloaded for ${service.title}`)}
+                      >
+                        <Download size={14} />
+                        <span>Download PDF</span>
+                      </button>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    className="view-cert-cta-btn"
-                    onClick={() => setShowCertView(true)}
-                  >
-                    View Official Digital Certificate
-                  </button>
+
+                  {/* Document Collection & Expiry Details */}
+                  <div className="gov-completed-insights-strip">
+                    <div className="insight-card-item">
+                      <div className="insight-top">
+                        <MapPin size={15} className="insight-icon" />
+                        <span className="insight-title">Document Collection / Channel</span>
+                      </div>
+                      <p className="insight-desc">
+                        {service.id.includes('pbt')
+                          ? 'Physical official hologram premise window sticker & framed signboard permit can be collected at Menara DBKL 2 Level 5 (Counter 4) or dispatched via registered post.'
+                          : service.id.includes('jakim')
+                          ? 'Official framed wooden plaque will be dispatched via registered courier to premise address or available for pickup at Kompleks Islam Putrajaya.'
+                          : '100% Instant Digital Certificate with cryptographic verification QR code. Legally recognized across all government agencies and banks.'}
+                      </p>
+                    </div>
+
+                    <div className="insight-card-item">
+                      <div className="insight-top">
+                        <Clock size={15} className="insight-icon" />
+                        <span className="insight-title">Expiry & Renewal Horizon</span>
+                      </div>
+                      <p className="insight-desc">
+                        {service.id.includes('pbt')
+                          ? 'Valid for 1 Year (Expires in 12 months). Local Council renewal submission opens 30 days prior to expiry.'
+                          : service.id.includes('jakim')
+                          ? 'Valid for 2 Years. Annual Halal Assurance System surveillance window due in 10 months.'
+                          : 'Valid for 1 Year (Expires in 12 months). Proactive renewal alerts will be delivered via SMS & email.'}
+                      </p>
+                    </div>
+
+                    <div className="insight-card-item highlight-ai">
+                      <div className="insight-top">
+                        <Sparkles size={15} className="insight-icon text-emerald" />
+                        <span className="insight-title text-emerald">MyGateway AI Recommendation</span>
+                      </div>
+                      <p className="insight-desc">
+                        With this completed registration, your profile is now <strong>Potentially Eligible for the SME Digital Grant (up to RM5,000)</strong>. View details in the Completed Journey stage.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 

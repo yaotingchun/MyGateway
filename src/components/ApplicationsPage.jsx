@@ -39,6 +39,7 @@ import {
 import Navbar from './Navbar';
 import ServiceWorkspaceView from './ServiceWorkspaceView';
 import PreparationPhaseView from './PreparationPhaseView';
+import CompletedPhaseView from './CompletedPhaseView';
 import {
   getLocalActiveApplications,
   saveLocalActiveApplications,
@@ -1337,73 +1338,17 @@ const ApplicationsPage = ({
               )}
 
               {/* ════════════════════════════════════════════════════════════════
-                  STAGE 3: COMPLETED DOSSIER & RECORDS
+                  STAGE 3: COMPLETED DOSSIER & RECORDS (AI RECOMMENDATIONS, RESPONSIBILITIES, OBTAINED DOCUMENTS)
                  ════════════════════════════════════════════════════════════════ */}
               {currentStage === 3 && (
-                <section className="phase-section phase-completed-section">
-                  <div className="completed-summary-hero">
-                    <div className="completed-trophy-circle">
-                      <Award size={36} />
-                    </div>
-                    <h2>Application Journey Successfully Completed!</h2>
-                    <p>
-                      All statutory verifications and agency procedures for <strong>{activeApp.title}</strong> are approved and registered with the Government of Malaysia.
-                    </p>
-                  </div>
-
-                  {/* Registered Records Summary Table */}
-                  <div className="completed-records-card">
-                    <h3 className="records-card-title">Approved Agency Records & Certificates</h3>
-                    <div className="records-list">
-                      {rawSteps.map((st, i) => (
-                        <div key={st.id || i} className="record-item-row">
-                          <div className="record-left">
-                            <CheckCircle2 size={18} className="record-check-icon" />
-                            <div>
-                              <h4>{st.title}</h4>
-                              <span className="record-agency-tag">{st.agency}</span>
-                            </div>
-                          </div>
-
-                          <div className="record-right">
-                            <span className="record-ref-id">
-                              {st.submissionRecord?.referenceNumber || ('MYG-' + st.id.toUpperCase().replace('STEP-', '') + '-99120')}
-                            </span>
-                            <button
-                              type="button"
-                              className="view-record-btn"
-                              onClick={() => handleOpenWorkspace(st)}
-                            >
-                              <ExternalLink size={14} />
-                              <span>View Details</span>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Completed Actions */}
-                  <div className="completed-footer-actions">
-                    <button
-                      type="button"
-                      className="download-dossier-btn"
-                      onClick={() => alert('Official Application Dossier PDF generated and downloaded.')}
-                    >
-                      <Download size={16} />
-                      <span>Download Official Application Dossier</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="return-history-btn"
-                      onClick={handleBackToList}
-                    >
-                      <span>Return to Applications List</span>
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                </section>
+                <CompletedPhaseView
+                  activeApp={activeApp}
+                  username={username}
+                  lang={lang}
+                  onOpenWorkspace={handleOpenWorkspace}
+                  onBackToList={handleBackToList}
+                  onNavigate={onNavigate}
+                />
               )}
 
             </div>
