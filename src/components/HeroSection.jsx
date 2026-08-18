@@ -18,7 +18,7 @@ const HeroSection = ({ onLoginClick }) => {
         
         <div className="hero-buttons">
           <button className="btn-primary" onClick={onLoginClick}>
-            <ArrowRight size={18} className="btn-icon" /> Log In
+            <ArrowRight size={18} className="btn-icon" /> Log In with MyDigital ID
           </button>
           <button className="btn-secondary">
             <Info size={18} className="btn-icon info-icon" /> Learn More

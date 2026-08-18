@@ -65,7 +65,7 @@ const FieldEdit = ({ label, field, type, fullWidth, value, originalValue, onChan
   );
 };
 
-const ProfilePage = ({ username = 'Jason', onLogout, onNavigate, lang = 'EN', onLangChange }) => {
+const ProfilePage = ({ username = 'Jason', onLogout, onNavigate, lang = 'EN', onLangChange, onTriggerOnboarding }) => {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editingSection, setEditingSection] = useState(null);
@@ -132,7 +132,7 @@ const ProfilePage = ({ username = 'Jason', onLogout, onNavigate, lang = 'EN', on
   if (loading || !profileData) {
     return (
       <div className="pp-root">
-        <Navbar username={username} onLogout={onLogout} activePage="profile" onNavigate={onNavigate} lang={lang} onLangChange={onLangChange} />
+        <Navbar username={username} onLogout={onLogout} activePage="profile" onNavigate={onNavigate} lang={lang} onLangChange={onLangChange} onTriggerOnboarding={onTriggerOnboarding} />
         <div className="pp-loading-container">
           <div className="pp-loading-card">
             <div className="pp-loading-spinner"></div>
@@ -339,7 +339,7 @@ const ProfilePage = ({ username = 'Jason', onLogout, onNavigate, lang = 'EN', on
 
   return (
     <div className="pp-root">
-      <Navbar username={username} onLogout={onLogout} activePage="profile" onNavigate={onNavigate} lang={lang} onLangChange={onLangChange} />
+      <Navbar username={username} onLogout={onLogout} activePage="profile" onNavigate={onNavigate} lang={lang} onLangChange={onLangChange} onTriggerOnboarding={onTriggerOnboarding} />
 
       <div className="pp-container">
         {/* Sidebar */}

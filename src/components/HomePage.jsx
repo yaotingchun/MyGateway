@@ -108,23 +108,23 @@ function StatusBadge({ status }) {
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
-const HomePage = ({ username, onLogout, onNavigate, onAskAi }) => {
+const HomePage = ({ username = 'Jason', onLogout, onNavigate, onAskAi, lang = 'EN', onLangChange, onTriggerOnboarding }) => {
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-  const handlePromptClick = (p) => {
-    setQuery(p);
+  const handlePromptClick = (promptText) => {
     if (onAskAi) {
-      onAskAi(p);
+      onAskAi(promptText);
     } else if (onNavigate) {
-      onNavigate('ai', p);
+      onNavigate('ai', promptText);
     }
   };
 
   const handleAskSubmit = (e) => {
     e.preventDefault();
+    if (!query.trim()) return;
     if (onAskAi) {
       onAskAi(query);
     } else if (onNavigate) {
@@ -139,6 +139,9 @@ const HomePage = ({ username, onLogout, onNavigate, onAskAi }) => {
         onLogout={onLogout}
         activePage="home"
         onNavigate={onNavigate}
+        lang={lang}
+        onLangChange={onLangChange}
+        onTriggerOnboarding={onTriggerOnboarding}
       />
 
       <main className="hp-main">

@@ -22,7 +22,13 @@ import {
   HelpCircle,
   Save,
   CheckCircle,
-  Clock
+  Clock,
+  Zap,
+  RotateCcw,
+  ShieldAlert,
+  Database,
+  CheckCheck,
+  CornerDownRight
 } from 'lucide-react';
 import { getProfile, saveProfile } from '../utils/profileStore';
 import './PreparationPhaseView.css';
@@ -161,25 +167,32 @@ export default function PreparationPhaseView({
 
   const [selectedServiceId, setSelectedServiceId] = useState(steps[0]?.id || '');
   const [profileData, setProfileData] = useState({});
+  
+  // Specific fields start EMPTY so the citizen sees general profile data is retrieved from JPN/PADU,
+  // but agency-specific parameters are to be entered or demo-autofilled via Ctrl+Enter.
   const [servicePreparationState, setServicePreparationState] = useState(() => {
     const initialPrep = {};
     steps.forEach((st) => {
       if (!st || !st.id) return;
       initialPrep[st.id] = {
         customFields: {
-          businessName: 'Kopi & Roti Heritage Enterprise',
-          premiseAddress: 'No. 18, Ground Floor, Jalan Telawi 3, Bangsar, 59100 Kuala Lumpur',
-          signboardWording: 'RESTORAN KOPI & ROTI HERITAGE',
-          turnoverBracket: 'RM150,000 - RM500,000 / year',
-          muslimStaffCount: '3 Trained Muslim Handlers',
-          bankAccountNo: '114012398471',
-          sspnAccount: 'SSPN-10894218',
+          businessName: '',
+          premiseAddress: '',
+          signboardWording: '',
+          dbpCode: '',
+          floorArea: '',
+          turnoverBracket: '',
+          muslimStaffCount: '',
+          bankAccountNo: '',
+          sspnAccount: '',
+          specificNotes: ''
         },
         uploadedDocs: {
-          identityDoc: { name: 'Applicant_MyKad_Front_Back.pdf', size: '1.2 MB', uploaded: true, aiChecked: true, aiScore: 99 },
-          tenancyDoc: { name: 'Tenancy_Agreement_Bangsar_Stamped.pdf', size: '3.8 MB', uploaded: true, aiChecked: true, aiScore: 98 },
-          signboardDoc: { name: 'Signboard_Visual_DBP_Approved.pdf', size: '2.1 MB', uploaded: false, aiChecked: false, aiScore: 0 },
-          slpmDoc: { name: 'SLPM_Food_Handler_Cert_Typhoid_TY2.pdf', size: '1.9 MB', uploaded: true, aiChecked: true, aiScore: 96 }
+          identityDoc: { name: 'Applicant_MyKad_Front_Back.pdf', size: '1.2 MB', uploaded: true, aiChecked: true, aiScore: 99, status: 'passed' },
+          tenancyDoc: { name: '', size: '', uploaded: false, aiChecked: false, aiScore: 0, status: 'idle', attempt: 0 },
+          signboardDoc: { name: '', size: '', uploaded: false, aiChecked: false, aiScore: 0, status: 'idle', attempt: 0 },
+          slpmDoc: { name: 'SLPM_Food_Handler_Cert_Typhoid_TY2.pdf', size: '1.9 MB', uploaded: true, aiChecked: true, aiScore: 96, status: 'passed' },
+          ptptnDoc: { name: '', size: '', uploaded: false, aiChecked: false, aiScore: 0, status: 'idle', attempt: 0 }
         },
         aiCheckingInProgress: false,
         isCompleted: false
@@ -188,11 +201,22 @@ export default function PreparationPhaseView({
     return initialPrep;
   });
 
+  // Track document submission attempts for demo (1st fail, 2nd pass)
+  const [docAttempts, setDocAttempts] = useState({
+    tenancyDoc: 0,
+    signboardDoc: 0,
+    identityDoc: 1,
+    slpmDoc: 1,
+    ptptnDoc: 0
+  });
+
   const [activeGuidelineModal, setActiveGuidelineModal] = useState(null);
   const [showDocReqModal, setShowDocReqModal] = useState(false);
   const [permissionToSave, setPermissionToSave] = useState(true);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
+  const [isAutofillFlashing, setIsAutofillFlashing] = useState(false);
+  const [showSavePromptModal, setShowSavePromptModal] = useState(false);
 
   // Synchronize active service selection if activeApp changes
   useEffect(() => {
@@ -201,7 +225,7 @@ export default function PreparationPhaseView({
     }
   }, [steps, selectedServiceId]);
 
-  // Load user profile on mount
+  // Load user profile on mount (General verified citizen data)
   useEffect(() => {
     let isMounted = true;
     async function loadData() {
@@ -209,37 +233,6 @@ export default function PreparationPhaseView({
         const prof = await getProfile(username);
         if (!isMounted) return;
         setProfileData(prof || {});
-
-        if (steps.length > 0) {
-          setServicePreparationState((prev) => {
-            const nextState = { ...prev };
-            steps.forEach((st) => {
-              if (!st || !st.id) return;
-              if (!nextState[st.id]) {
-                nextState[st.id] = {
-                  customFields: {
-                    businessName: prof?.businessName || 'Kopi & Roti Heritage Enterprise',
-                    premiseAddress: prof?.residentialAddress || 'No. 18, Ground Floor, Jalan Telawi 3, Bangsar, 59100 Kuala Lumpur',
-                    signboardWording: 'RESTORAN KOPI & ROTI HERITAGE',
-                    turnoverBracket: 'RM150,000 - RM500,000 / year',
-                    muslimStaffCount: '3 Trained Muslim Handlers',
-                    bankAccountNo: prof?.bankAccountNumber || '114012398471',
-                    sspnAccount: prof?.sspnAccount || 'SSPN-10894218',
-                  },
-                  uploadedDocs: {
-                    identityDoc: { name: 'Applicant_MyKad_Front_Back.pdf', size: '1.2 MB', uploaded: true, aiChecked: true, aiScore: 99 },
-                    tenancyDoc: { name: 'Tenancy_Agreement_Bangsar_Stamped.pdf', size: '3.8 MB', uploaded: true, aiChecked: true, aiScore: 98 },
-                    signboardDoc: { name: 'Signboard_Visual_DBP_Approved.pdf', size: '2.1 MB', uploaded: false, aiChecked: false, aiScore: 0 },
-                    slpmDoc: { name: 'SLPM_Food_Handler_Cert_Typhoid_TY2.pdf', size: '1.9 MB', uploaded: true, aiChecked: true, aiScore: 96 }
-                  },
-                  aiCheckingInProgress: false,
-                  isCompleted: false
-                };
-              }
-            });
-            return nextState;
-          });
-        }
       } catch (err) {
         console.warn('[PreparationPhaseView] profile load notice:', err);
       }
@@ -247,7 +240,7 @@ export default function PreparationPhaseView({
 
     loadData();
     return () => { isMounted = false; };
-  }, [username, activeApp]);
+  }, [username]);
 
   const activeService = steps.find((s) => s.id === selectedServiceId) || steps[0] || {
     id: 'step-ssm',
@@ -285,6 +278,74 @@ export default function PreparationPhaseView({
       }
     }));
   };
+
+  // Quick autofill demo function triggered by Ctrl+Enter (with 0.5s delay before prompt)
+  const handleQuickDemoAutofill = () => {
+    const demoDataByService = {
+      ssm: {
+        businessName: 'Kopi & Roti Heritage Enterprise',
+        premiseAddress: 'No. 18, Ground Floor, Jalan Telawi 3, Bangsar, 59100 Kuala Lumpur'
+      },
+      pbt: {
+        signboardWording: 'RESTORAN KOPI & ROTI HERITAGE',
+        dbpCode: 'DBP/2026/FNB/08912',
+        floorArea: '145.5 sq metres'
+      },
+      lhdn: {
+        turnoverBracket: 'RM150,000 - RM500,000 / year'
+      },
+      jakim: {
+        muslimStaffCount: '3 Trained Muslim Handlers'
+      },
+      ptptn: {
+        sspnAccount: 'SSPN-10894218'
+      }
+    };
+
+    setServicePreparationState((prev) => {
+      const next = { ...prev };
+      steps.forEach((st) => {
+        const id = (st.id || '').toLowerCase();
+        let demoFields = { specificNotes: 'All information verified compliant with statutory rules' };
+        if (id.includes('ssm')) demoFields = { ...demoFields, ...demoDataByService.ssm };
+        else if (id.includes('pbt')) demoFields = { ...demoFields, ...demoDataByService.pbt };
+        else if (id.includes('lhdn')) demoFields = { ...demoFields, ...demoDataByService.lhdn };
+        else if (id.includes('jakim')) demoFields = { ...demoFields, ...demoDataByService.jakim };
+        else if (id.includes('ptptn')) demoFields = { ...demoFields, ...demoDataByService.ptptn };
+
+        next[st.id] = {
+          ...next[st.id],
+          customFields: {
+            ...next[st.id]?.customFields,
+            ...demoFields
+          }
+        };
+      });
+      return next;
+    });
+
+    // Trigger visual highlight flash
+    setIsAutofillFlashing(true);
+    setTimeout(() => setIsAutofillFlashing(false), 1200);
+
+    // 0.5s delay after everything is filled before prompting user
+    setTimeout(() => {
+      setShowSavePromptModal(true);
+    }, 500);
+  };
+
+  // Keyboard shortcut listener for Ctrl + Enter / Cmd + Enter
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleQuickDemoAutofill();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeService, selectedServiceId, steps]);
 
   // Handle Save New Information to Central Profile
   const handleSaveToProfile = async () => {
@@ -328,14 +389,15 @@ export default function PreparationPhaseView({
             size: fileSize,
             uploaded: true,
             aiChecked: false,
-            aiScore: 0
+            aiScore: 0,
+            status: 'idle'
           }
         }
       }
     }));
   };
 
-  // Trigger AI Document Checking simulation
+  // Trigger AI Document Checking simulation with 2-stage Demo (1st fail: blurry, 2nd pass: clear)
   const handleRunAiCheck = (docKey) => {
     const sId = activeService.id || selectedServiceId;
     setServicePreparationState((prev) => ({
@@ -346,32 +408,94 @@ export default function PreparationPhaseView({
       }
     }));
 
+    const currentAttempt = docAttempts[docKey] || 0;
+
     setTimeout(() => {
-      setServicePreparationState((prev) => ({
-        ...prev,
-        [sId]: {
-          ...prev[sId],
-          aiCheckingInProgress: false,
-          uploadedDocs: {
-            ...prev[sId]?.uploadedDocs,
-            [docKey]: {
-              ...prev[sId]?.uploadedDocs?.[docKey],
-              aiChecked: true,
-              aiScore: Math.floor(95 + Math.random() * 5),
-              checkedAt: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+      if (currentAttempt === 0) {
+        // 1st Attempt: Verification Fails (Simple rejection reason: document too blurry)
+        setDocAttempts((prev) => ({ ...prev, [docKey]: 1 }));
+        setServicePreparationState((prev) => ({
+          ...prev,
+          [sId]: {
+            ...prev[sId],
+            aiCheckingInProgress: false,
+            uploadedDocs: {
+              ...prev[sId]?.uploadedDocs,
+              [docKey]: {
+                name: docKey === 'tenancyDoc' ? 'Tenancy_Agreement_Bangsar_Draft.pdf' : (docKey === 'signboardDoc' ? 'Signboard_Visual_Draft.pdf' : 'Uploaded_Document_Draft.pdf'),
+                size: '2.1 MB',
+                uploaded: true,
+                aiChecked: true,
+                aiScore: 40,
+                status: 'failed',
+                attempt: 1,
+                rejectionReason: 'Document is too blurry and illegible (< 150 DPI). Please upload a clear, high-resolution copy.',
+                aiPassedDesc: null
+              }
             }
           }
-        }
-      }));
-    }, 1200);
+        }));
+      } else {
+        // 2nd Attempt: Verification Passes (Clear copy)
+        setDocAttempts((prev) => ({ ...prev, [docKey]: 2 }));
+        setServicePreparationState((prev) => ({
+          ...prev,
+          [sId]: {
+            ...prev[sId],
+            aiCheckingInProgress: false,
+            uploadedDocs: {
+              ...prev[sId]?.uploadedDocs,
+              [docKey]: {
+                name: docKey === 'tenancyDoc' ? 'Tenancy_Agreement_Bangsar_Stamped_Clear.pdf' : (docKey === 'signboardDoc' ? 'Signboard_Visual_DBP_Approved_Final_v2.pdf' : 'Uploaded_Document_Clear.pdf'),
+                size: '3.8 MB',
+                uploaded: true,
+                aiChecked: true,
+                aiScore: 98,
+                status: 'passed',
+                attempt: 2,
+                rejectionReason: null,
+                aiPassedDesc: 'Document verified successfully: 300 DPI high-resolution scan verified and compliant.'
+              }
+            }
+          }
+        }));
+      }
+    }, 900);
   };
 
-  // Check if all services are prepared
+  // Reset Document Demo Attempt for testing again
+  const handleResetDocDemo = (docKey) => {
+    const sId = activeService.id || selectedServiceId;
+    setDocAttempts((prev) => ({ ...prev, [docKey]: 0 }));
+    setServicePreparationState((prev) => ({
+      ...prev,
+      [sId]: {
+        ...prev[sId],
+        uploadedDocs: {
+          ...prev[sId]?.uploadedDocs,
+          [docKey]: {
+            name: '',
+            size: '',
+            uploaded: false,
+            aiChecked: false,
+            aiScore: 0,
+            status: 'idle',
+            attempt: 0,
+            rejectionReason: null,
+            aiPassedDesc: null
+          }
+        }
+      }
+    }));
+  };
+
+  // Check if all services are prepared (all required docs uploaded and not failed)
   const preparedServicesCount = Object.keys(servicePreparationState).filter((k) => {
     const p = servicePreparationState[k];
     const docs = p?.uploadedDocs || {};
-    const hasUploadedAll = Object.values(docs).some((d) => d.uploaded && d.aiChecked);
-    return hasUploadedAll;
+    const docList = Object.values(docs);
+    const hasPassedDocs = docList.some((d) => d.uploaded && d.aiChecked && d.status !== 'failed');
+    return hasPassedDocs;
   }).length;
 
   return (
@@ -551,18 +675,20 @@ export default function PreparationPhaseView({
             {/* Request Missing Information Box */}
             <div className="missing-info-box">
               <div className="missing-box-header">
-                <div className="missing-header-icon">
-                  <AlertCircle size={18} />
-                </div>
-                <div>
-                  <h5 className="missing-header-title">Additional Parameters Required For This Agency</h5>
-                  <p className="missing-header-sub">
-                    Please provide the agency-specific parameters below for official {activeService.agency || 'agency'} filing.
-                  </p>
+                <div className="missing-header-left">
+                  <div className="missing-header-icon">
+                    <AlertCircle size={18} />
+                  </div>
+                  <div>
+                    <h5 className="missing-header-title">Additional Parameters Required For This Agency</h5>
+                    <p className="missing-header-sub">
+                      Please provide the agency-specific parameters below for official {activeService.agency || 'agency'} filing.
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="missing-inputs-grid">
+              <div className={`missing-inputs-grid ${isAutofillFlashing ? 'autofill-active' : ''}`}>
                 {isSsm && (
                   <>
                     <div className="missing-input-field span-2">
@@ -581,7 +707,7 @@ export default function PreparationPhaseView({
                         type="text"
                         value={currentServicePrep.customFields?.premiseAddress || ''}
                         onChange={(e) => handleFieldChange('premiseAddress', e.target.value)}
-                        placeholder="e.g. No. 18, Jalan Telawi 3, Bangsar, 59100 Kuala Lumpur"
+                        placeholder="e.g. No. 18, Ground Floor, Jalan Telawi 3, Bangsar, 59100 Kuala Lumpur"
                       />
                     </div>
                   </>
@@ -602,15 +728,18 @@ export default function PreparationPhaseView({
                       <label>DBP Language Verification Code</label>
                       <input
                         type="text"
-                        defaultValue="DBP/2026/FNB/08912"
-                        placeholder="DBP/2026/..."
+                        value={currentServicePrep.customFields?.dbpCode || ''}
+                        onChange={(e) => handleFieldChange('dbpCode', e.target.value)}
+                        placeholder="e.g. DBP/2026/FNB/08912"
                       />
                     </div>
                     <div className="missing-input-field">
                       <label>Premise Floor Area (m²)</label>
                       <input
                         type="text"
-                        defaultValue="145.5 sq metres"
+                        value={currentServicePrep.customFields?.floorArea || ''}
+                        onChange={(e) => handleFieldChange('floorArea', e.target.value)}
+                        placeholder="e.g. 145.5 sq metres"
                       />
                     </div>
                   </>
@@ -620,9 +749,10 @@ export default function PreparationPhaseView({
                   <div className="missing-input-field span-2">
                     <label>Estimated Annual Turnover *</label>
                     <select
-                      value={currentServicePrep.customFields?.turnoverBracket || 'RM150,000 - RM500,000 / year'}
+                      value={currentServicePrep.customFields?.turnoverBracket || ''}
                       onChange={(e) => handleFieldChange('turnoverBracket', e.target.value)}
                     >
+                      <option value="">-- Select Annual Turnover Bracket --</option>
                       <option value="Under RM150,000 / year">Under RM150,000 / year</option>
                       <option value="RM150,000 - RM500,000 / year">RM150,000 - RM500,000 / year</option>
                       <option value="RM500,000 - RM1,000,000 / year">RM500,000 - RM1,000,000 / year</option>
@@ -663,7 +793,9 @@ export default function PreparationPhaseView({
                     <label>Application Specific Notes</label>
                     <input
                       type="text"
-                      defaultValue="All information confirmed compliant with agency rules"
+                      value={currentServicePrep.customFields?.specificNotes || ''}
+                      onChange={(e) => handleFieldChange('specificNotes', e.target.value)}
+                      placeholder="e.g. All information confirmed compliant with agency rules"
                     />
                   </div>
                 )}
@@ -833,16 +965,32 @@ export default function PreparationPhaseView({
                     </div>
 
                     {currentServicePrep.uploadedDocs?.tenancyDoc?.uploaded ? (
-                      <span className="doc-attached-pill">
-                        <CheckCircle2 size={13} /> {currentServicePrep.uploadedDocs.tenancyDoc.name} ({currentServicePrep.uploadedDocs.tenancyDoc.size})
-                      </span>
+                      <div className="doc-top-actions">
+                        <span className={`doc-attached-pill ${currentServicePrep.uploadedDocs.tenancyDoc.status === 'failed' ? 'pill-failed' : ''}`}>
+                          {currentServicePrep.uploadedDocs.tenancyDoc.status === 'failed' ? (
+                            <AlertCircle size={13} style={{ color: '#dc2626' }} />
+                          ) : (
+                            <CheckCircle2 size={13} />
+                          )}
+                          {currentServicePrep.uploadedDocs.tenancyDoc.name} ({currentServicePrep.uploadedDocs.tenancyDoc.size})
+                        </span>
+                        <button
+                          type="button"
+                          className="doc-reset-test-btn"
+                          onClick={() => handleResetDocDemo('tenancyDoc')}
+                          title="Reset this document to test failure -> success demo again"
+                        >
+                          <RotateCcw size={12} />
+                          <span>Reset Test</span>
+                        </button>
+                      </div>
                     ) : (
                       <button
                         type="button"
                         className="attach-sample-btn"
-                        onClick={() => handleAttachDocument('tenancyDoc', 'Tenancy_Agreement_Bangsar_Stamped.pdf', '3.8 MB')}
+                        onClick={() => handleRunAiCheck('tenancyDoc')}
                       >
-                        <Upload size={13} /> Attach Tenancy Agreement
+                        <Upload size={13} /> Upload & Submit Tenancy Agreement
                       </button>
                     )}
                   </div>
@@ -854,17 +1002,24 @@ export default function PreparationPhaseView({
                       <div>
                         <span className="ai-status-title">AI Document Verification Engine</span>
                         <p className="ai-status-desc">
-                          {currentServicePrep.uploadedDocs?.tenancyDoc?.aiChecked
-                            ? 'AI verified active LHDN Stamp Duty Certificate LHDN-2026-99120, matched Bangsar address, and valid lease through 2028.'
-                            : 'Click to verify stamp duty certificate and premise address matching automatically.'}
+                          {currentServicePrep.uploadedDocs?.tenancyDoc?.status === 'passed'
+                            ? (currentServicePrep.uploadedDocs.tenancyDoc.aiPassedDesc || 'Document verified successfully: 300 DPI high-resolution scan verified and compliant.')
+                            : currentServicePrep.uploadedDocs?.tenancyDoc?.status === 'failed'
+                            ? 'Document rejected: Image is too blurry and illegible (< 150 DPI). Please upload a clear, high-resolution copy.'
+                            : 'AI will verify document readability, scan resolution, and LHDN stamp duty certificate.'}
                         </p>
                       </div>
                     </div>
 
-                    {currentServicePrep.uploadedDocs?.tenancyDoc?.aiChecked ? (
+                    {currentServicePrep.uploadedDocs?.tenancyDoc?.status === 'passed' ? (
                       <div className="ai-score-badge score-pass">
                         <ShieldCheck size={16} />
                         <span>{currentServicePrep.uploadedDocs.tenancyDoc.aiScore}% Compliance (Passed)</span>
+                      </div>
+                    ) : currentServicePrep.uploadedDocs?.tenancyDoc?.status === 'failed' ? (
+                      <div className="ai-score-badge score-fail">
+                        <ShieldAlert size={16} />
+                        <span>{currentServicePrep.uploadedDocs.tenancyDoc.aiScore}% Compliance (Failed)</span>
                       </div>
                     ) : (
                       <button
@@ -881,12 +1036,57 @@ export default function PreparationPhaseView({
                         ) : (
                           <>
                             <Sparkles size={13} />
-                            <span>Run AI Check</span>
+                            <span>Submit & Verify</span>
                           </>
                         )}
                       </button>
                     )}
                   </div>
+
+                  {/* Rejection Alert Box when 1st attempt fails */}
+                  {currentServicePrep.uploadedDocs?.tenancyDoc?.status === 'failed' && (
+                    <div className="doc-rejection-alert">
+                      <div className="rejection-alert-top">
+                        <div className="rejection-alert-icon-wrap">
+                          <AlertTriangle size={18} />
+                        </div>
+                        <div>
+                          <h6 className="rejection-alert-title">Submission Failed: Document Too Blurry</h6>
+                          <p className="rejection-alert-summary">{currentServicePrep.uploadedDocs.tenancyDoc.rejectionReason}</p>
+                        </div>
+                      </div>
+
+                      <div className="rejection-action-bar">
+                        <button
+                          type="button"
+                          className="upload-corrected-doc-btn"
+                          onClick={() => handleRunAiCheck('tenancyDoc')}
+                          disabled={currentServicePrep.aiCheckingInProgress}
+                        >
+                          {currentServicePrep.aiCheckingInProgress ? (
+                            <>
+                              <RefreshCw size={14} className="spin-icon" />
+                              <span>AI Scanning High-Res Copy...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload size={14} />
+                              <span>Re-upload Clear Document (300 DPI High-Res)</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="reset-demo-link-btn"
+                          onClick={() => handleResetDocDemo('tenancyDoc')}
+                        >
+                          <RotateCcw size={12} />
+                          <span>Reset Demo Flow</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -913,16 +1113,32 @@ export default function PreparationPhaseView({
                     </div>
 
                     {currentServicePrep.uploadedDocs?.signboardDoc?.uploaded ? (
-                      <span className="doc-attached-pill">
-                        <CheckCircle2 size={13} /> {currentServicePrep.uploadedDocs.signboardDoc.name} ({currentServicePrep.uploadedDocs.signboardDoc.size})
-                      </span>
+                      <div className="doc-top-actions">
+                        <span className={`doc-attached-pill ${currentServicePrep.uploadedDocs.signboardDoc.status === 'failed' ? 'pill-failed' : ''}`}>
+                          {currentServicePrep.uploadedDocs.signboardDoc.status === 'failed' ? (
+                            <AlertCircle size={13} style={{ color: '#dc2626' }} />
+                          ) : (
+                            <CheckCircle2 size={13} />
+                          )}
+                          {currentServicePrep.uploadedDocs.signboardDoc.name} ({currentServicePrep.uploadedDocs.signboardDoc.size})
+                        </span>
+                        <button
+                          type="button"
+                          className="doc-reset-test-btn"
+                          onClick={() => handleResetDocDemo('signboardDoc')}
+                          title="Reset this document to test failure -> success demo again"
+                        >
+                          <RotateCcw size={12} />
+                          <span>Reset Test</span>
+                        </button>
+                      </div>
                     ) : (
                       <button
                         type="button"
                         className="attach-sample-btn"
-                        onClick={() => handleAttachDocument('signboardDoc', 'Signboard_Visual_DBP_Approved.pdf', '2.1 MB')}
+                        onClick={() => handleRunAiCheck('signboardDoc')}
                       >
-                        <Upload size={13} /> Attach Signboard Visual
+                        <Upload size={13} /> Upload & Submit Signboard Visual
                       </button>
                     )}
                   </div>
@@ -934,24 +1150,31 @@ export default function PreparationPhaseView({
                       <div>
                         <span className="ai-status-title">AI Document Verification Engine</span>
                         <p className="ai-status-desc">
-                          {currentServicePrep.uploadedDocs?.signboardDoc?.aiChecked
-                            ? 'AI verified Bahasa Melayu font prominence (35% larger) and confirmed active DBP/2026/FNB/08912 endorsement code.'
-                            : 'AI will verify national language prominence and DBP endorsement on visual.'}
+                          {currentServicePrep.uploadedDocs?.signboardDoc?.status === 'passed'
+                            ? (currentServicePrep.uploadedDocs.signboardDoc.aiPassedDesc || 'Document verified successfully: 300 DPI high-resolution scan verified and compliant.')
+                            : currentServicePrep.uploadedDocs?.signboardDoc?.status === 'failed'
+                            ? 'Document rejected: Image is too blurry and illegible (< 150 DPI). Please upload a clear, high-resolution copy.'
+                            : 'AI will verify national language prominence and image resolution.'}
                         </p>
                       </div>
                     </div>
 
-                    {currentServicePrep.uploadedDocs?.signboardDoc?.aiChecked ? (
+                    {currentServicePrep.uploadedDocs?.signboardDoc?.status === 'passed' ? (
                       <div className="ai-score-badge score-pass">
                         <ShieldCheck size={16} />
                         <span>{currentServicePrep.uploadedDocs.signboardDoc.aiScore}% Compliance (Passed)</span>
+                      </div>
+                    ) : currentServicePrep.uploadedDocs?.signboardDoc?.status === 'failed' ? (
+                      <div className="ai-score-badge score-fail">
+                        <ShieldAlert size={16} />
+                        <span>{currentServicePrep.uploadedDocs.signboardDoc.aiScore}% Compliance (Failed)</span>
                       </div>
                     ) : (
                       <button
                         type="button"
                         className="run-ai-check-btn"
                         onClick={() => handleRunAiCheck('signboardDoc')}
-                        disabled={!currentServicePrep.uploadedDocs?.signboardDoc?.uploaded || currentServicePrep.aiCheckingInProgress}
+                        disabled={currentServicePrep.aiCheckingInProgress}
                       >
                         {currentServicePrep.aiCheckingInProgress ? (
                           <>
@@ -961,12 +1184,57 @@ export default function PreparationPhaseView({
                         ) : (
                           <>
                             <Sparkles size={13} />
-                            <span>Run AI Check</span>
+                            <span>Submit & Verify</span>
                           </>
                         )}
                       </button>
                     )}
                   </div>
+
+                  {/* Rejection Alert Box when 1st attempt fails */}
+                  {currentServicePrep.uploadedDocs?.signboardDoc?.status === 'failed' && (
+                    <div className="doc-rejection-alert">
+                      <div className="rejection-alert-top">
+                        <div className="rejection-alert-icon-wrap">
+                          <AlertTriangle size={18} />
+                        </div>
+                        <div>
+                          <h6 className="rejection-alert-title">Submission Failed: Document Too Blurry</h6>
+                          <p className="rejection-alert-summary">{currentServicePrep.uploadedDocs.signboardDoc.rejectionReason}</p>
+                        </div>
+                      </div>
+
+                      <div className="rejection-action-bar">
+                        <button
+                          type="button"
+                          className="upload-corrected-doc-btn"
+                          onClick={() => handleRunAiCheck('signboardDoc')}
+                          disabled={currentServicePrep.aiCheckingInProgress}
+                        >
+                          {currentServicePrep.aiCheckingInProgress ? (
+                            <>
+                              <RefreshCw size={14} className="spin-icon" />
+                              <span>AI Scanning High-Res Copy...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload size={14} />
+                              <span>Re-upload Clear Document (300 DPI High-Res)</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="reset-demo-link-btn"
+                          onClick={() => handleResetDocDemo('signboardDoc')}
+                        >
+                          <RotateCcw size={12} />
+                          <span>Reset Demo Flow</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1110,6 +1378,104 @@ export default function PreparationPhaseView({
           <ArrowRight size={16} />
         </button>
       </div>
+
+      {/* ── Save Information to Central Profile Popout Prompt Modal ── */}
+      {showSavePromptModal && (
+        <div className="prep-modal-overlay">
+          <div className="save-prompt-dialog">
+            <div className="dialog-header">
+              <div className="dialog-header-left">
+                <div className="save-prompt-icon-bubble">
+                  <Database size={22} className="save-prompt-icon" />
+                </div>
+                <div>
+                  <span className="dialog-auth-tag">National Citizen Database Sync</span>
+                  <h3 className="dialog-title">Save Parameters to Profile?</h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dialog-close-btn"
+                onClick={() => setShowSavePromptModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="dialog-body">
+              <p className="dialog-desc">
+                We detected newly entered parameters for <strong>{activeService.title}</strong>. Would you like MyGateway to securely synchronize and save this data into your <strong>Centralized Citizen Profile (PADU & JPN Database)</strong> for automatic pre-filling across future government applications?
+              </p>
+
+              {/* Preview of parameters to be saved */}
+              <div className="save-prompt-preview-card">
+                <div className="preview-card-header">
+                  <Sparkles size={14} className="sparkle-icon" />
+                  <span>Parameters to be synchronized:</span>
+                </div>
+                <div className="save-prompt-chips-grid">
+                  {Object.entries(currentServicePrep.customFields || {}).map(([k, v]) => {
+                    if (!v) return null;
+                    let label = k;
+                    if (k === 'businessName') label = 'Proposed Trade Name';
+                    else if (k === 'premiseAddress') label = 'Premise Address';
+                    else if (k === 'signboardWording') label = 'Malay Signboard Wording';
+                    else if (k === 'dbpCode') label = 'DBP Verification Code';
+                    else if (k === 'floorArea') label = 'Premise Floor Area';
+                    else if (k === 'turnoverBracket') label = 'Annual Turnover';
+                    else if (k === 'muslimStaffCount') label = 'Muslim Staff Handlers';
+                    else if (k === 'sspnAccount') label = 'Simpan SSPN Account';
+                    else if (k === 'specificNotes') label = 'Application Notes';
+                    return (
+                      <div key={k} className="save-field-chip">
+                        <span className="chip-key-label">{label}:</span>
+                        <span className="chip-val-text">{v}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="save-security-guarantee">
+                <ShieldCheck size={16} className="security-icon" />
+                <span>Protected under the Digital Government Personal Data Protection & Encryption Framework.</span>
+              </div>
+            </div>
+
+            <div className="dialog-footer save-prompt-footer-btns">
+              <button
+                type="button"
+                className="save-prompt-dismiss-btn"
+                onClick={() => setShowSavePromptModal(false)}
+              >
+                Don't Save / Skip
+              </button>
+
+              <button
+                type="button"
+                className="save-prompt-confirm-btn"
+                onClick={async () => {
+                  await handleSaveToProfile();
+                  setShowSavePromptModal(false);
+                }}
+                disabled={isSavingProfile}
+              >
+                {isSavingProfile ? (
+                  <>
+                    <RefreshCw size={15} className="spin-icon" />
+                    <span>Saving to Profile...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={15} />
+                    <span>Yes, Save to Profile</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Detailed Document Guidelines Modal (when (i) is clicked) ── */}
       {activeGuidelineModal && (

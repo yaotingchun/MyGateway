@@ -445,7 +445,7 @@ function ServiceCard({ service, lang = 'EN' }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
-const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLogout, lang = 'EN', onLangChange }) => {
+const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLogout, lang = 'EN', onLangChange, onTriggerOnboarding }) => {
   const T = TRANSLATIONS[lang] || TRANSLATIONS.EN;
   const [allServices, setAllServices]     = useState([]);
   const [filtered, setFiltered]           = useState([]);
@@ -521,6 +521,7 @@ const ServicesPage = ({ initialCategory = 'All', onNavigate, username = '', onLo
         activePage="services"
         lang={lang}
         onLangChange={onLangChange}
+        onTriggerOnboarding={onTriggerOnboarding}
       />
 
       <main className="sp-main">

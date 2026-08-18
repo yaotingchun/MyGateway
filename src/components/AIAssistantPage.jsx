@@ -75,6 +75,7 @@ const AIAssistantPage = ({
   initialQuery = '',
   lang = 'EN',
   onLangChange,
+  onTriggerOnboarding,
 }) => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -358,6 +359,7 @@ const AIAssistantPage = ({
         onNavigate={onNavigate}
         lang={lang}
         onLangChange={onLangChange}
+        onTriggerOnboarding={onTriggerOnboarding}
       />
 
       {/* Main Full-Width AI Workspace */}

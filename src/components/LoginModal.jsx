@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, ShieldAlert, Award, FileText, CreditCard, Landmark } from 'lucide-react';
+import { X, User, ShieldAlert, Award, FileText, CreditCard, Landmark, Sparkles, CheckCircle2 } from 'lucide-react';
 import './LoginModal.css';
 
 // Crisp pixel-perfect QR Code SVG mockup
@@ -52,7 +52,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
 
     // Auto login simulation after 8 seconds (mimics scanning QR code on phone)
     const autoLogin = setTimeout(() => {
-      onLogin('Siti');
+      onLogin('Jason', { isFirstTime: false });
       onClose();
       setShowQrCode(false);
     }, 8000);
@@ -63,10 +63,22 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
     };
   }, [showQrCode, onLogin, onClose]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleLoginClick(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  const handleLoginClick = () => {
-    onLogin('Siti');
+  const handleLoginClick = (isFirstTime = false) => {
+    onLogin(isFirstTime ? 'Ahmad' : 'Jason', { isFirstTime });
     onClose();
   };
 
@@ -158,7 +170,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
               </p>
 
               {/* Clickable QR code to simulate instant scanning */}
-              <div className="qr-code-box" onClick={handleLoginClick} title="Klik untuk simulasi imbasan">
+              <div className="qr-code-box" onClick={() => handleLoginClick(false)} title="Klik untuk simulasi imbasan">
                 <QrCodeSvg />
               </div>
 
@@ -192,7 +204,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
                 </button>
 
                 <p className="register-link-text">
-                  Masih belum ada akaun? <a href="#" className="modal-link">Daftar akaun MyDigital ID</a>
+                  Masih belum ada akaun? <a href="#" className="modal-link" onClick={(e) => { e.preventDefault(); handleLoginClick(true); }}>Daftar akaun MyDigital ID</a>
                 </p>
               </div>
 
@@ -201,12 +213,12 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
                 <h2 className="login-box-title">LOG MASUK</h2>
                 <p className="login-box-subtitle">FOR NON-CITIZEN AND PERMANENT RESIDENT</p>
 
-                <button className="modal-login-btn non-citizen-btn" onClick={handleLoginClick}>
+                <button className="modal-login-btn non-citizen-btn" onClick={() => handleLoginClick(false)}>
                   Log Masuk
                 </button>
 
                 <p className="register-link-text">
-                  Masih belum ada akaun? <a href="#" className="modal-link">Daftar disini</a>
+                  Masih belum ada akaun? <a href="#" className="modal-link" onClick={(e) => { e.preventDefault(); handleLoginClick(true); }}>Daftar disini</a>
                 </p>
               </div>
             </div>

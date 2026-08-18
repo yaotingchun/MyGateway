@@ -22,10 +22,38 @@ function App() {
   const [isCheckingUser, setIsCheckingUser] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
-  const handleLogin = async (username) => {
+  // Global shortcut (Ctrl + Enter / Cmd + Enter) to demo First-Time User Onboarding
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        if (!isLoggedIn) {
+          e.preventDefault();
+          setIsLoginModalOpen(false);
+          handleLogin('Ahmad', { isFirstTime: true });
+        } else if (currentPage !== 'applications') {
+          e.preventDefault();
+          setShowOnboarding(true);
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'O' || e.key === 'o')) {
+        e.preventDefault();
+        setShowOnboarding((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLoggedIn, currentPage]);
+
+  const handleLogin = async (username, options = {}) => {
     const user = username || 'Jason';
     setCurrentUser(user);
     setIsLoggedIn(true);
+
+    if (options.isFirstTime || user === 'Ahmad' || user === 'NewUser') {
+      setShowOnboarding(true);
+    } else {
+      setShowOnboarding(false);
+    }
     setCurrentPage('home');
   };
 
@@ -51,6 +79,10 @@ function App() {
     setCurrentPage('ai');
   };
 
+  const handleTriggerOnboarding = () => {
+    setShowOnboarding(true);
+  };
+
   if (isLoggedIn) {
     if (isCheckingUser) {
       return (
@@ -70,6 +102,7 @@ function App() {
           initialQuery={aiInitialQuery}
           lang={lang}
           onLangChange={setLang}
+          onTriggerOnboarding={handleTriggerOnboarding}
         />
       );
     } else if (currentPage === 'applications') {
@@ -80,6 +113,7 @@ function App() {
           onNavigate={handleNavigate}
           lang={lang}
           onLangChange={setLang}
+          onTriggerOnboarding={handleTriggerOnboarding}
         />
       );
     } else if (currentPage === 'services') {
@@ -90,6 +124,7 @@ function App() {
           onNavigate={handleNavigate}
           lang={lang}
           onLangChange={setLang}
+          onTriggerOnboarding={handleTriggerOnboarding}
         />
       );
     } else if (currentPage === 'calendar') {
@@ -100,6 +135,7 @@ function App() {
           onNavigate={handleNavigate}
           lang={lang}
           onLangChange={setLang}
+          onTriggerOnboarding={handleTriggerOnboarding}
         />
       );
     } else if (currentPage === 'profile') {
@@ -108,6 +144,9 @@ function App() {
           username={currentUser || 'Jason'}
           onLogout={handleLogout}
           onNavigate={handleNavigate}
+          lang={lang}
+          onLangChange={setLang}
+          onTriggerOnboarding={handleTriggerOnboarding}
         />
       );
     } else {
@@ -119,6 +158,7 @@ function App() {
           onAskAi={handleAskAi}
           lang={lang}
           onLangChange={setLang}
+          onTriggerOnboarding={handleTriggerOnboarding}
         />
       );
     }
@@ -146,7 +186,9 @@ function App() {
 
       {/* Hero content row */}
       <div className="main-content">
-        <HeroSection onLoginClick={() => setIsLoginModalOpen(true)} />
+        <HeroSection 
+          onLoginClick={() => setIsLoginModalOpen(true)} 
+        />
       </div>
 
       <LoginModal 

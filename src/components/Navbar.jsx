@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, ChevronDown, Globe, LogOut, User } from 'lucide-react';
+import { Bell, ChevronDown, Globe, LogOut, User, Sparkles } from 'lucide-react';
 import './Navbar.css';
 import logo from '../assets/logo.png';
 
@@ -17,7 +17,7 @@ const NAV_LINKS = [
   { id: 'profile', label: 'Profile', labelMY: 'Profil' },
 ];
 
-const Navbar = ({ username, onLogout, activePage = 'home', onNavigate, lang = 'EN', onLangChange }) => {
+const Navbar = ({ username, onLogout, activePage = 'home', onNavigate, lang = 'EN', onLangChange, onTriggerOnboarding }) => {
   const [langOpen, setLangOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifCount] = useState(2);
@@ -111,7 +111,7 @@ const Navbar = ({ username, onLogout, activePage = 'home', onNavigate, lang = 'E
                   <div className="nb-avatar nb-avatar-lg">{username.charAt(0).toUpperCase()}</div>
                   <div>
                     <p className="nb-dropdown-name">{username.charAt(0).toUpperCase() + username.slice(1)}</p>
-                    <p className="nb-dropdown-email">MyGateway User</p>
+                    <p className="nb-dropdown-email">MyGateway Citizen</p>
                   </div>
                 </div>
                 <hr className="nb-dropdown-divider" />

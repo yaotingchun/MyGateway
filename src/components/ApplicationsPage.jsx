@@ -258,6 +258,7 @@ const ApplicationsPage = ({
   onNavigate,
   lang = 'EN',
   onLangChange,
+  onTriggerOnboarding,
 }) => {
   const isMalay = lang === 'MY';
 
@@ -666,6 +667,7 @@ const ApplicationsPage = ({
         activePage="applications"
         lang={lang}
         onLangChange={onLangChange}
+        onTriggerOnboarding={onTriggerOnboarding}
       />
 
       <main className="apps-page-main">

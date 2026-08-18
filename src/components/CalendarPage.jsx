@@ -197,7 +197,8 @@ export default function CalendarPage({
   onLogout,
   onNavigate,
   lang = 'EN',
-  onLangChange
+  onLangChange,
+  onTriggerOnboarding
 }) {
   const isMalay = lang === 'MY' || lang === 'ms';
 
@@ -327,6 +328,7 @@ export default function CalendarPage({
         activePage="calendar"
         lang={lang}
         onLangChange={onLangChange}
+        onTriggerOnboarding={onTriggerOnboarding}
       />
 
       <main className="gov-calendar-main-content">
