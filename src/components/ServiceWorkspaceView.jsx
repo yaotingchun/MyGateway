@@ -22,9 +22,103 @@ import {
   Briefcase,
   MapPin,
   Calendar,
-  Sparkles
+  Sparkles,
+  Upload,
+  UploadCloud,
+  FileUp,
+  X,
+  Eye,
+  History,
+  CheckCheck
 } from 'lucide-react';
 import './ServiceWorkspaceView.css';
+
+// Helper to determine the specific document requiring action for a service
+const getFlaggedDocumentInfo = (service) => {
+  if (service?.flaggedDoc) return service.flaggedDoc;
+
+  if (service?.id?.includes('pbt')) {
+    return {
+      id: 'doc-signboard',
+      name: 'Business Signboard Artwork & Facade Visual',
+      fileName: 'signboard_mockup_v1.pdf',
+      version: 'v1.0',
+      fileSize: '2.4 MB',
+      uploadedAt: '18 Aug 2026, 10:45 AM',
+      issue: 'Missing official DBP Language Certification Stamp & 30% Malay font prominence ratio endorsement',
+      officerName: 'Puan Norazlina binti Razali',
+      officerRole: 'Senior Licensing Officer, DBKL Licensing Dept',
+      requiredAction: 'Upload updated signboard artwork visual (v2.0) endorsed with verified DBP certification seal.',
+      sampleUpdatedDocName: 'signboard_facade_dbp_approved_v2.0.pdf',
+      sampleUpdatedDocSize: '3.1 MB',
+      defaultRemarks: 'Attached updated signboard artwork (v2.0) endorsed with DBP Sah Bahasa certificate code DBP/2026/FNB/08912 and 30% Malay language font prominence.'
+    };
+  } else if (service?.id?.includes('ssm')) {
+    return {
+      id: 'doc-tenancy',
+      name: 'Commercial Tenancy Agreement',
+      fileName: 'tenancy_agreement_v1.pdf',
+      version: 'v1.0',
+      fileSize: '3.8 MB',
+      uploadedAt: '16 Aug 2026, 09:15 AM',
+      issue: 'Missing official LHDN Stamp Duty endorsement certificate page',
+      officerName: 'Encik Khairul Anuar bin Salleh',
+      officerRole: 'Senior Registrar, SSM EzBiz Division',
+      requiredAction: 'Upload complete tenancy agreement (v2.0) with official LHDN stamp duty certificate.',
+      sampleUpdatedDocName: 'commercial_tenancy_stamped_v2.0.pdf',
+      sampleUpdatedDocSize: '4.2 MB',
+      defaultRemarks: 'Uploaded tenancy agreement copy (v2.0) with attached LHDN digital stamp duty certificate.'
+    };
+  } else if (service?.id?.includes('ptptn')) {
+    return {
+      id: 'doc-offer-letter',
+      name: 'University Admission Offer Letter & Fee Schedule',
+      fileName: 'admission_letter_v1.pdf',
+      version: 'v1.0',
+      fileSize: '1.9 MB',
+      uploadedAt: '15 Aug 2026, 02:30 PM',
+      issue: 'Offer letter missing MQA full accreditation reference code and faculty signature',
+      officerName: 'Puan Halimatun Saadiah',
+      officerRole: 'Loan Evaluation Officer, PTPTN Higher Education Dept',
+      requiredAction: 'Upload verified institutional offer letter (v2.0) with MQA accreditation credentials.',
+      sampleUpdatedDocName: 'um_official_admission_offer_mqa_v2.0.pdf',
+      sampleUpdatedDocSize: '2.5 MB',
+      defaultRemarks: 'Uploaded official university offer letter (v2.0) bearing Dean signature and MQA/FA10294 accreditation code.'
+    };
+  } else if (service?.id?.includes('jakim')) {
+    return {
+      id: 'doc-halal-ingredients',
+      name: 'Halal Assurance System & Ingredient Certification',
+      fileName: 'ingredient_matrix_v1.pdf',
+      version: 'v1.0',
+      fileSize: '5.1 MB',
+      uploadedAt: '17 Aug 2026, 11:20 AM',
+      issue: 'Imported poultry seasoning supplier certificate expired on 31 July 2026',
+      officerName: 'Ustaz Ridzwan bin Ahmad',
+      officerRole: 'Halal Inspection Officer, JAKIM MYeHALAL',
+      requiredAction: 'Upload renewed supplier Halal certificate (v2.0) for imported seasoning.',
+      sampleUpdatedDocName: 'renewed_supplier_halal_cert_v2.0.pdf',
+      sampleUpdatedDocSize: '1.8 MB',
+      defaultRemarks: 'Attached renewed JAKIM-recognized halal certificate from seasoning manufacturer (valid till 2028).'
+    };
+  } else {
+    return {
+      id: 'doc-general',
+      name: 'Supporting Verification Document',
+      fileName: 'supporting_doc_v1.pdf',
+      version: 'v1.0',
+      fileSize: '2.0 MB',
+      uploadedAt: '17 Aug 2026, 10:00 AM',
+      issue: 'Clarification required for statutory verification',
+      officerName: 'Licensing Evaluation Officer',
+      officerRole: 'Agency Verification Officer',
+      requiredAction: 'Upload updated document copy (v2.0).',
+      sampleUpdatedDocName: 'updated_supporting_document_v2.0.pdf',
+      sampleUpdatedDocSize: '2.2 MB',
+      defaultRemarks: 'Uploaded updated document copy (v2.0) as requested by agency officer.'
+    };
+  }
+};
 
 const ServiceWorkspaceView = ({
   service,
@@ -46,10 +140,19 @@ const ServiceWorkspaceView = ({
   const [officerNote, setOfficerNote] = useState('');
   const [statutoryAgreed, setStatutoryAgreed] = useState(false);
 
+  // Document Re-upload in Action Required state
+  const [uploadedNewFile, setUploadedNewFile] = useState(null);
+  const [applicantRemarks, setApplicantRemarks] = useState('');
+  const [isSubmittingDoc, setIsSubmittingDoc] = useState(false);
+  const [submissionSuccessMessage, setSubmissionSuccessMessage] = useState('');
+
   // Reset local edit/cert view if service changes
   useEffect(() => {
     setIsEditingForm(false);
     setShowCertView(false);
+    setUploadedNewFile(null);
+    setApplicantRemarks('');
+    setSubmissionSuccessMessage('');
   }, [service?.id]);
 
   // Initialize official form data
@@ -165,10 +268,79 @@ const ServiceWorkspaceView = ({
     }, 600);
   };
 
+  // Select sample approved document for 1-click test
+  const handleSelectSampleDoc = () => {
+    const docInfo = getFlaggedDocumentInfo(service);
+    setUploadedNewFile({
+      name: docInfo.sampleUpdatedDocName,
+      size: docInfo.sampleUpdatedDocSize,
+      version: 'v2.0',
+      uploadedAt: new Date().toISOString(),
+      isVerifiedSample: true,
+    });
+    setApplicantRemarks(docInfo.defaultRemarks);
+    setSubmissionSuccessMessage('');
+  };
+
+  // Upload local file from disk
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedNewFile({
+        name: file.name,
+        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        version: 'v2.0',
+        uploadedAt: new Date().toISOString(),
+        isVerifiedSample: false,
+      });
+      if (!applicantRemarks) {
+        setApplicantRemarks(`Uploaded updated document (${file.name}) addressing the officer clarification request.`);
+      }
+      setSubmissionSuccessMessage('');
+    }
+  };
+
+  const handleRemoveUploadedFile = () => {
+    setUploadedNewFile(null);
+    setApplicantRemarks('');
+    setSubmissionSuccessMessage('');
+  };
+
+  // Submit updated document version v2.0 directly to the reviewing officer
+  const handleSubmitUpdatedDocument = () => {
+    if (!uploadedNewFile) return;
+
+    setIsSubmittingDoc(true);
+    const docInfo = getFlaggedDocumentInfo(service);
+
+    setTimeout(() => {
+      setIsSubmittingDoc(false);
+      const successMsg = `Document Version 2.0 has been successfully submitted to ${docInfo.officerName} (${service.agency}). The agency technical review has resumed.`;
+      setSubmissionSuccessMessage(successMsg);
+
+      // Transition service status to 'processing' and persist new document
+      onUpdateServiceStatus(service.id, 'processing', {
+        ...(service.submissionRecord || {}),
+        submittedAt: new Date().toISOString(),
+        formData: formData,
+        resubmittedDoc: {
+          name: uploadedNewFile.name,
+          size: uploadedNewFile.size,
+          version: 'v2.0',
+          submittedAt: new Date().toISOString(),
+          remarks: applicantRemarks,
+          officerName: docInfo.officerName,
+        }
+      });
+    }, 700);
+  };
+
   // Status simulation actions
   const handleSetPhase = (newStatus) => {
     setIsEditingForm(false);
     setShowCertView(false);
+    setUploadedNewFile(null);
+    setSubmissionSuccessMessage('');
     if (newStatus === 'ready_to_apply') {
       onUpdateServiceStatus(service.id, 'ready_to_apply', {
         formData: formData,
@@ -1022,22 +1194,245 @@ const ServiceWorkspaceView = ({
                 </div>
               </div>
 
-              {/* 2. OFFICER ACTION BOX (if Review Required or Rejected) */}
-              {(service.status === 'review_required' || service.status === 'rejected') && (
+              {/* 2. DEDICATED DOCUMENT ACTION & RE-UPLOAD PANEL (For Action Required / Review Required) */}
+              {service.status === 'review_required' && (() => {
+                const docInfo = getFlaggedDocumentInfo(service);
+                return (
+                  <div className="gov-action-doc-panel">
+                    {/* Header with Officer Direct Communication */}
+                    <div className="action-panel-top">
+                      <div className="officer-identity-row">
+                        <div className="officer-avatar-icon">
+                          <AlertTriangle size={22} />
+                        </div>
+                        <div className="officer-identity-info">
+                          <div className="officer-badge-row">
+                            <span className="officer-tag">Officer Review Clarification</span>
+                            <span className="officer-name-pill">{docInfo.officerName} • {docInfo.officerRole}</span>
+                          </div>
+                          <h3 className="action-panel-heading">Document Rectification &amp; Action Required</h3>
+                        </div>
+                      </div>
+                      <p className="officer-direct-message">
+                        "{officerNote || docInfo.issue}. Statutory processing is currently held pending document correction. Please upload an updated version (v2.0) of the flagged document below. No changes to your personal or enterprise registration form details are needed."
+                      </p>
+                    </div>
+
+                    {/* Flagged Document Card */}
+                    <div className="flagged-doc-summary-card">
+                      <div className="flagged-doc-header">
+                        <span className="flagged-doc-lbl">Flagged Supporting Document:</span>
+                        <span className="flagged-doc-status-badge">
+                          <AlertCircle size={13} />
+                          <span>Action Required (Needs Re-Upload)</span>
+                        </span>
+                      </div>
+                      <div className="flagged-doc-details">
+                        <div className="flagged-doc-icon-wrap">
+                          <FileText size={28} />
+                        </div>
+                        <div className="flagged-doc-meta">
+                          <div className="flagged-doc-name-row">
+                            <h4 className="flagged-doc-name">{docInfo.name}</h4>
+                            <span className="flagged-doc-version">Current Version: {docInfo.version}</span>
+                          </div>
+                          <div className="flagged-doc-submeta">
+                            <span>File: <code>{docInfo.fileName}</code></span>
+                            <span>•</span>
+                            <span>Size: {docInfo.fileSize}</span>
+                            <span>•</span>
+                            <span>Uploaded: {docInfo.uploadedAt}</span>
+                          </div>
+                          <div className="flagged-doc-reason-box">
+                            <strong>Reason from Reviewing Officer:</strong> {docInfo.issue}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Upload New Version (v2.0) Box */}
+                    <div className="doc-reupload-interactive-card">
+                      <div className="reupload-card-header">
+                        <div className="reupload-header-left">
+                          <FileUp size={20} className="reupload-header-icon" />
+                          <div>
+                            <h4>Upload Corrected Document (Version 2.0)</h4>
+                            <p>Attach the revised file meeting the statutory requirements specified by {docInfo.officerName}.</p>
+                          </div>
+                        </div>
+                        <span className="reupload-version-pill">Target: Version 2.0</span>
+                      </div>
+
+                      {/* Dropzone / Upload State */}
+                      {!uploadedNewFile ? (
+                        <div className="reupload-dropzone">
+                          <UploadCloud size={40} className="dropzone-icon" />
+                          <h5 className="dropzone-title">Drag and drop your updated file here, or browse</h5>
+                          <p className="dropzone-subtitle">Supported formats: PDF, JPEG, PNG • Maximum size: 25MB</p>
+                          
+                          <div className="dropzone-actions-row">
+                            <label className="dropzone-browse-btn">
+                              <Upload size={15} />
+                              <span>Browse Computer Files</span>
+                              <input
+                                type="file"
+                                accept=".pdf,.png,.jpg,.jpeg"
+                                onChange={handleFileUpload}
+                                style={{ display: 'none' }}
+                              />
+                            </label>
+
+                            <button
+                              type="button"
+                              className="dropzone-sample-btn"
+                              onClick={handleSelectSampleDoc}
+                              title="Test workflow instantly with a pre-verified approved sample file"
+                            >
+                              <Sparkles size={14} className="sparkle-icon" />
+                              <span>Select Sample Verified Document (1-Click Test)</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="reupload-file-ready-card">
+                          <div className="file-ready-left">
+                            <div className="file-ready-icon-wrap">
+                              <CheckCircle2 size={24} />
+                            </div>
+                            <div>
+                              <div className="file-ready-name-row">
+                                <span className="file-ready-name">{uploadedNewFile.name}</span>
+                                <span className="file-ready-badge">Version 2.0 • Ready to Submit</span>
+                              </div>
+                              <div className="file-ready-meta">
+                                <span>Size: {uploadedNewFile.size}</span>
+                                <span>•</span>
+                                <span>Status: Verified Format (PDF)</span>
+                                {uploadedNewFile.isVerifiedSample && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="file-ready-verified-tag">✓ DBP Endorsement Stamp Attached</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            className="file-remove-btn"
+                            onClick={handleRemoveUploadedFile}
+                            title="Remove file"
+                          >
+                            <X size={15} />
+                            <span>Change File</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Applicant Notes / Remarks */}
+                      <div className="reupload-remarks-block">
+                        <label className="remarks-label">
+                          <span>Applicant Explanatory Remarks for Reviewing Officer</span>
+                          <span className="optional-tag">(Optional)</span>
+                        </label>
+                        <textarea
+                          rows={3}
+                          className="reupload-textarea"
+                          value={applicantRemarks}
+                          onChange={(e) => setApplicantRemarks(e.target.value)}
+                          placeholder="Provide any explanation or reference number (e.g. DBP Certificate number) for the reviewing officer..."
+                        />
+                      </div>
+
+                      {/* Submit Updated Document Action Bar */}
+                      <div className="reupload-submit-bar">
+                        <div className="reupload-hint">
+                          <CheckCheck size={16} />
+                          <span>Submitting will notify {docInfo.officerName} and resume technical evaluation.</span>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="reupload-submit-btn"
+                          disabled={!uploadedNewFile || isSubmittingDoc}
+                          onClick={handleSubmitUpdatedDocument}
+                        >
+                          {isSubmittingDoc ? (
+                            <>
+                              <RefreshCw size={16} className="spin-icon" />
+                              <span>Uploading Document v2.0 &amp; Notifying Officer...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send size={16} />
+                              <span>Submit Updated Document (v2.0) to Officer</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Document Versioning History Log */}
+                    <div className="doc-version-history-card">
+                      <div className="version-history-header">
+                        <History size={16} />
+                        <h4>Document Version History Log</h4>
+                      </div>
+                      <div className="version-history-list">
+                        {uploadedNewFile && (
+                          <div className="version-history-item item-draft">
+                            <div className="version-item-left">
+                              <span className="version-badge badge-v2">v2.0 (New / Pending Submission)</span>
+                              <span className="version-filename">{uploadedNewFile.name}</span>
+                            </div>
+                            <span className="version-time">Just uploaded</span>
+                          </div>
+                        )}
+                        <div className="version-history-item item-flagged">
+                          <div className="version-item-left">
+                            <span className="version-badge badge-v1">v1.0 (Superseded / Action Required)</span>
+                            <span className="version-filename">{docInfo.fileName} ({docInfo.fileSize})</span>
+                            <span className="version-reason">• {docInfo.issue}</span>
+                          </div>
+                          <span className="version-time">{docInfo.uploadedAt}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Success Notification after Document Resubmission */}
+              {submissionSuccessMessage && (
+                <div className="gov-resubmission-success-card">
+                  <div className="success-icon-wrap">
+                    <CheckCircle2 size={24} />
+                  </div>
+                  <div className="success-content">
+                    <h4>Document Version 2.0 Successfully Submitted!</h4>
+                    <p>{submissionSuccessMessage}</p>
+                    <span className="success-sla-tag">✓ SLA Timer Resumed: Next update expected in 1-2 working days</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Rejected / Resubmit Application Box (if rejected) */}
+              {service.status === 'rejected' && (
                 <div className="officer-feedback-banner">
                   <div className="feedback-top">
-                    <AlertTriangle size={20} className="feedback-icon" />
+                    <AlertCircle size={20} className="feedback-icon" />
                     <div>
-                      <h4>Official Agency Officer Feedback:</h4>
-                      <p>{officerNote || (service.status === 'review_required' ? 'Signboard artwork requires DBP Sah Bahasa certificate confirmation.' : 'Information mismatch. Please verify applicant MyKad identity.')}</p>
+                      <h4>Official Agency Rejection Notice:</h4>
+                      <p>{officerNote || 'Information mismatch with statutory records. Please contact the agency counter or resubmit with verified documentation.'}</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     className="feedback-action-btn"
-                    onClick={() => setIsEditingForm(true)}
+                    onClick={() => handleSetPhase('review_required')}
                   >
-                    Edit Application & Resubmit
+                    Upload Corrected Documents &amp; Appeal
                   </button>
                 </div>
               )}

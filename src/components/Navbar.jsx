@@ -17,14 +17,57 @@ const NAV_LINKS = [
   { id: 'profile', label: 'Profile', labelMY: 'Profil' },
 ];
 
+const NAVBAR_NOTIFICATIONS = [
+  {
+    id: 'notif-action-signboard',
+    type: 'action',
+    label: 'Action Required',
+    title: 'Premise License: Updated Signboard Artwork Required',
+    desc: 'DBKL Licensing Officer requested an updated version of your Business Signboard Artwork with official DBP certification seal.',
+    time: '10m ago',
+    appId: 'APP-2026-FNB-8921',
+    serviceId: 'step-pbt',
+    actionText: 'Upload Document →',
+    isAction: true,
+  },
+  {
+    id: 'notif-ssm-done',
+    type: 'completed',
+    label: 'Completed',
+    title: 'SSM Business Registration Approved',
+    desc: 'Your EzBiz Business Registration (Borang D) has been officially issued.',
+    time: '2h ago',
+    appId: 'APP-2026-FNB-8921',
+    serviceId: 'step-ssm',
+    isAction: false,
+  },
+  {
+    id: 'notif-license-renew',
+    type: 'upcoming',
+    label: 'Upcoming',
+    title: 'Driving licence renewal reminder',
+    desc: 'Renew your driving licence before 27 Aug 2026 to avoid penalties.',
+    time: '1 day ago',
+    isAction: false,
+  },
+];
+
 const Navbar = ({ username, onLogout, activePage = 'home', onNavigate, lang = 'EN', onLangChange, onTriggerOnboarding }) => {
   const [langOpen, setLangOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [notifCount] = useState(2);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifCount] = useState(1);
 
-  const handleNavClick = (pageId) => {
+  const handleNavClick = (pageId, query = '', params = null) => {
     if (onNavigate) {
-      onNavigate(pageId);
+      onNavigate(pageId, query, params);
+    }
+  };
+
+  const handleNotifClick = (notif) => {
+    setNotifOpen(false);
+    if (notif.appId && onNavigate) {
+      onNavigate('applications', '', { appId: notif.appId, serviceId: notif.serviceId });
     }
   };
 
@@ -65,7 +108,7 @@ const Navbar = ({ username, onLogout, activePage = 'home', onNavigate, lang = 'E
             <button
               id="lang-toggle"
               className="nb-lang-btn"
-              onClick={() => { setLangOpen(!langOpen); setProfileOpen(false); }}
+              onClick={() => { setLangOpen(!langOpen); setProfileOpen(false); setNotifOpen(false); }}
             >
               <Globe size={16} />
               <span>{lang}</span>
@@ -87,17 +130,81 @@ const Navbar = ({ username, onLogout, activePage = 'home', onNavigate, lang = 'E
           </div>
 
           {/* Notification Bell */}
-          <button id="notif-btn" className="nb-icon-btn nb-notif-btn">
-            <Bell size={20} />
-            {notifCount > 0 && <span className="nb-notif-badge">{notifCount}</span>}
-          </button>
+          <div className="nb-notif-wrap">
+            <button
+              id="notif-btn"
+              className={`nb-icon-btn nb-notif-btn ${notifOpen ? 'nb-btn-active' : ''}`}
+              onClick={() => { setNotifOpen(!notifOpen); setLangOpen(false); setProfileOpen(false); }}
+              title="Notifications"
+            >
+              <Bell size={20} />
+              {notifCount > 0 && <span className="nb-notif-badge">{notifCount}</span>}
+            </button>
+
+            {notifOpen && (
+              <div className="nb-notif-dropdown">
+                <div className="nb-notif-header">
+                  <div className="nb-notif-header-title">
+                    <Bell size={16} />
+                    <span>Notifications</span>
+                  </div>
+                  <span className="nb-notif-action-tag">1 Action Required</span>
+                </div>
+
+                <div className="nb-notif-items-list">
+                  {NAVBAR_NOTIFICATIONS.map((n) => (
+                    <div
+                      key={n.id}
+                      className={`nb-notif-item nb-notif-item-${n.type} ${n.isAction ? 'nb-notif-highlight' : ''}`}
+                      onClick={() => handleNotifClick(n)}
+                    >
+                      <div className="nb-notif-item-top">
+                        <span className={`nb-notif-pill nb-notif-pill-${n.type}`}>
+                          {n.type === 'action' && <span className="nb-pulsing-dot" />}
+                          {n.label}
+                        </span>
+                        <span className="nb-notif-time">{n.time}</span>
+                      </div>
+                      <h4 className="nb-notif-item-title">{n.title}</h4>
+                      <p className="nb-notif-item-desc">{n.desc}</p>
+                      {n.actionText && (
+                        <button
+                          type="button"
+                          className="nb-notif-cta-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleNotifClick(n);
+                          }}
+                        >
+                          {n.actionText}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="nb-notif-footer">
+                  <button
+                    type="button"
+                    className="nb-notif-view-all"
+                    onClick={() => {
+                      setNotifOpen(false);
+                      handleNavClick('applications');
+                    }}
+                  >
+                    View All Applications & History →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Profile */}
           <div className="nb-profile-wrap">
             <button
               id="profile-toggle"
               className="nb-profile-btn"
-              onClick={() => { setProfileOpen(!profileOpen); setLangOpen(false); }}
+              onClick={() => { setProfileOpen(!profileOpen); setLangOpen(false); setNotifOpen(false); }}
             >
               <div className="nb-avatar">
                 {username.charAt(0).toUpperCase()}

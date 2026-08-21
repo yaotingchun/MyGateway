@@ -354,11 +354,41 @@
   border-radius: 12px;
   border-left: 3px solid transparent;
   position: relative;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hp-notif-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
 }
 
 .hp-notif-action {
   background: #fff5f5;
   border-left-color: #e53e3e;
+}
+
+.hp-notif-action-clickable:hover {
+  background: #fef2f2;
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.12);
+  border-left-color: #dc2626;
+}
+
+.hp-notif-cta-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
+  padding: 3px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.hp-notif-card:hover .hp-notif-cta-link {
+  background: #dc2626;
+  color: #ffffff;
 }
 
 .hp-notif-upcoming {

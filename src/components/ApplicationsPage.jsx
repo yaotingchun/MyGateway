@@ -97,7 +97,7 @@ const DEFAULT_SAMPLE_APPS = [
     title: 'Food & Beverage Business Setup Applications',
     summary: 'Official agency applications required to legally operate an F&B dining premise in Malaysia.',
     category: 'Business & Licensing',
-    status: 'In Progress',
+    status: 'Action Required',
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
     updatedAt: new Date().toISOString(),
     agencies: ['SSM', 'Local Council (PBT)', 'LHDN', 'JAKIM Halal'],
@@ -110,8 +110,8 @@ const DEFAULT_SAMPLE_APPS = [
         { id: 'c3', label: 'Premise Right', requirement: 'Valid commercial tenancy agreement or registered premise title deed', isMandatory: true },
         { id: 'c4', label: 'Food Handler Compliance', requirement: 'Prepared to complete KKM-accredited SLPM course & receive Typhoid TY2 vaccine', isMandatory: true }
       ],
-      checkedCriteria: {},
-      isEligible: false,
+      checkedCriteria: { c1: true, c2: true, c3: true, c4: true },
+      isEligible: true,
     },
     journey: {
       id: 'journey-fnb-standard',
@@ -130,7 +130,16 @@ const DEFAULT_SAMPLE_APPS = [
           description: 'Official registration of your enterprise entity name and business type.',
           timeframe: 'Instant (Online via EzBiz)',
           fee: 'RM60 - RM100/year',
-          status: 'ready_to_apply',
+          status: 'completed',
+          submissionRecord: {
+            referenceNumber: 'MYG-SSM-2026-891024',
+            submittedAt: '2026-08-16T10:00:00.000Z',
+          },
+          submissionOutput: {
+            ssmRegistrationNumber: '202601089214 (SSM-MY)',
+            ssmNumber: '202601089214',
+            certSerial: 'SSM-CERT-2026-891024'
+          }
         },
         {
           id: 'step-pbt',
@@ -144,7 +153,22 @@ const DEFAULT_SAMPLE_APPS = [
           description: 'Premise and advertisement signboard operational license issued by the local authority.',
           timeframe: '7 - 14 Working Days',
           fee: 'RM150 - RM800 depending on location/size',
-          status: 'locked',
+          status: 'review_required',
+          submissionRecord: {
+            referenceNumber: 'MYG-DBKL-2026-44910',
+            submittedAt: '2026-08-18T09:30:00.000Z',
+          },
+          officerNote: 'Signboard visual requires DBP Sah Bahasa certificate confirmation. The submitted visual (signboard_mockup_v1.pdf) is missing the DBP verification stamp and Bahasa Melayu font prominence declaration. Please upload an updated version of your signboard artwork with official DBP approval.',
+          flaggedDoc: {
+            id: 'doc-signboard',
+            name: 'Business Signboard Artwork & Facade Visual',
+            fileName: 'signboard_mockup_v1.pdf',
+            version: 'v1.0',
+            fileSize: '2.4 MB',
+            uploadedAt: '18 Aug 2026, 10:45 AM',
+            issue: 'Missing DBP Language Certification Stamp & 30% Malay font prominence ratio endorsement',
+            requiredAction: 'Upload updated signboard artwork (v2.0) with DBP verification seal'
+          }
         },
         {
           id: 'step-lhdn',
@@ -158,7 +182,7 @@ const DEFAULT_SAMPLE_APPS = [
           description: 'Register enterprise income tax file and e-invoicing compliance portal.',
           timeframe: '1 - 3 Working Days',
           fee: 'Free',
-          status: 'locked',
+          status: 'ready_to_apply',
         },
         {
           id: 'step-jakim',
@@ -196,8 +220,8 @@ const DEFAULT_SAMPLE_APPS = [
         { id: 'c3', label: 'Simpan SSPN Account', requirement: 'Active Simpan SSPN account opened in applicant’s name', isMandatory: true },
         { id: 'c4', label: 'Institutional Offer', requirement: 'Received official offer letter from MQA/MOHE accredited IPTA/IPTS', isMandatory: true }
       ],
-      checkedCriteria: {},
-      isEligible: false,
+      checkedCriteria: { c1: true, c2: true, c3: true, c4: true },
+      isEligible: true,
     },
     journey: {
       id: 'journey-ptptn-standard',
@@ -259,20 +283,22 @@ const ApplicationsPage = ({
   lang = 'EN',
   onLangChange,
   onTriggerOnboarding,
+  initialAppId = null,
+  initialServiceId = null,
 }) => {
   const isMalay = lang === 'MY';
 
   const [applications, setApplications] = useState([]);
   const [selectedAppId, setSelectedAppId] = useState(null);
   const [activeApp, setActiveApp] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // 'list' | 'details'
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'details' | 'service'
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'in_progress' | 'eligible' | 'completed'
   const [citizenProfile, setCitizenProfile] = useState(null);
 
   // Main 4-stage timeline stepper (0: Eligibility Check, 1: Preparation, 2: Services & Application, 3: Completed)
-  const [currentStage, setCurrentStage] = useState(0);
-  const [isPreparationCompleted, setIsPreparationCompleted] = useState(false);
+  const [currentStage, setCurrentStage] = useState(2);
+  const [isPreparationCompleted, setIsPreparationCompleted] = useState(true);
 
   // Selected Service for Workspace Modal
   const [selectedService, setSelectedService] = useState(null);
@@ -292,24 +318,36 @@ const ApplicationsPage = ({
       loadApps(prof);
     };
     init();
-  }, [username]);
+  }, [username, initialAppId, initialServiceId]);
 
   const loadApps = (prof) => {
     let apps = getLocalActiveApplications();
-    if (!apps || apps.length === 0) {
+    if (!apps || apps.length === 0 || !apps.some(a => a.journey?.steps?.some(s => s.status === 'review_required'))) {
       apps = DEFAULT_SAMPLE_APPS;
       saveLocalActiveApplications(apps);
     }
     setApplications(apps);
 
-    const savedSelectedId = getSelectedApplicationId();
-    if (savedSelectedId) {
-      const found = apps.find((a) => a.id === savedSelectedId);
-      if (found) {
-        setSelectedAppId(found.id);
-        setActiveApp(found);
+    // Deep link targeting if initialAppId / initialServiceId are provided
+    const targetAppId = initialAppId || getSelectedApplicationId() || (apps.length > 0 ? apps[0].id : null);
+    if (targetAppId) {
+      const foundApp = apps.find((a) => a.id === targetAppId) || apps[0];
+      if (foundApp) {
+        setSelectedAppId(foundApp.id);
+        setActiveApp(foundApp);
+        setSelectedApplicationId(foundApp.id);
+
+        if (initialServiceId) {
+          const foundService = foundApp.journey?.steps?.find((s) => s.id === initialServiceId);
+          if (foundService) {
+            setSelectedService(foundService);
+            setViewMode('service');
+            return;
+          }
+        }
+
         setViewMode('details');
-        determineInitialStage(found);
+        determineInitialStage(foundApp);
         return;
       }
     }

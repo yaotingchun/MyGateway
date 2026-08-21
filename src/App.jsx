@@ -57,25 +57,31 @@ function App() {
     setCurrentPage('home');
   };
 
+  const [navParams, setNavParams] = useState(null);
+
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentUser('');
     setCurrentPage('home');
     setAiInitialQuery('');
+    setNavParams(null);
     setShowOnboarding(false);
   };
 
-  const handleNavigate = (pageId, query = '') => {
+  const handleNavigate = (pageId, query = '', params = null) => {
     if (pageId === 'ai') {
       setAiInitialQuery(query || '');
+      setNavParams(null);
       setCurrentPage('ai');
     } else {
+      setNavParams(params);
       setCurrentPage(pageId);
     }
   };
 
   const handleAskAi = (query) => {
     setAiInitialQuery(query || '');
+    setNavParams(null);
     setCurrentPage('ai');
   };
 
@@ -114,6 +120,8 @@ function App() {
           lang={lang}
           onLangChange={setLang}
           onTriggerOnboarding={handleTriggerOnboarding}
+          initialAppId={navParams?.appId}
+          initialServiceId={navParams?.serviceId}
         />
       );
     } else if (currentPage === 'services') {

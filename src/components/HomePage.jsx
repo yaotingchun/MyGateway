@@ -28,32 +28,40 @@ const CATEGORIES = [
 const APPLICATIONS = [
   { 
     id: 1, 
-    name: 'Home-based Food Business Registration', 
-    agency: 'SSM', 
-    status: 'processing', 
-    detail: 'Step 2 of 4',
-    progress: { current: 2, total: 4 }
+    appId: 'APP-2026-FNB-8921',
+    serviceId: 'step-pbt',
+    name: 'Food & Beverage Business Setup (Premise License)', 
+    agency: 'Local Council (DBKL / PBT)', 
+    status: 'action', 
+    detail: 'Action Required: Upload updated signboard document' 
   },
   { 
     id: 2, 
-    name: 'Tax Registration (Sole Proprietor)', 
-    agency: 'LHDN', 
+    appId: 'APP-2026-FNB-8921',
+    serviceId: 'step-ssm',
+    name: 'SSM Business Registration (EzBiz)', 
+    agency: 'SSM', 
     status: 'completed', 
-    detail: 'Completed on 12 May 2024' 
+    detail: 'Completed & Certified' 
   },
   { 
     id: 3, 
-    name: 'Business License Application', 
-    agency: 'MBJB', 
-    status: 'action', 
-    detail: 'Provide additional document' 
+    appId: 'APP-2026-EDU-3104',
+    serviceId: 'step-ptptn-app',
+    name: 'PTPTN Higher Education Loan Filing', 
+    agency: 'PTPTN', 
+    status: 'processing', 
+    detail: 'Step 2 of 3',
+    progress: { current: 2, total: 3 }
   },
   { 
     id: 4, 
-    name: 'Food Handler Certificate', 
-    agency: 'Ministry of Health (MOH)', 
+    appId: 'APP-2026-FNB-8921',
+    serviceId: 'step-jakim',
+    name: 'JAKIM Halal Certification (MYeHALAL)', 
+    agency: 'JAKIM', 
     status: 'not-started', 
-    detail: 'Not started yet' 
+    detail: 'Prerequisite Required' 
   },
 ];
 
@@ -65,16 +73,18 @@ const RECOMMENDATIONS = [
 
 const NOTIFICATIONS = [
   {
-    id: 1,
+    id: 'notif-action-signboard',
     type: 'action',
     icon: '🔴',
     label: 'Action Required',
-    title: 'Housing application needs a document',
-    desc: 'Your housing application requires an additional supporting document to proceed.',
-    time: '2h ago',
+    title: 'Premise License: Updated Signboard Artwork Required',
+    desc: 'DBKL Licensing Officer requested an updated version of your Business Signboard Artwork with official DBP certification seal.',
+    time: '10m ago',
+    appId: 'APP-2026-FNB-8921',
+    serviceId: 'step-pbt',
   },
   {
-    id: 2,
+    id: 'notif-upcoming-license',
     type: 'upcoming',
     icon: '🟡',
     label: 'Upcoming',
@@ -83,13 +93,15 @@ const NOTIFICATIONS = [
     time: '1 day ago',
   },
   {
-    id: 3,
+    id: 'notif-ssm-completed',
     type: 'completed',
     icon: '🟢',
     label: 'Completed',
-    title: 'Passport renewal approved',
-    desc: 'Your passport renewal has been approved. Collect at Immigration office.',
-    time: '3 days ago',
+    title: 'SSM Business Registration Approved',
+    desc: 'Your EzBiz registration certificate (Borang D) has been officially issued.',
+    time: '2h ago',
+    appId: 'APP-2026-FNB-8921',
+    serviceId: 'step-ssm',
   },
 ];
 
@@ -230,16 +242,39 @@ const HomePage = ({ username = 'Jason', onLogout, onNavigate, onAskAi, lang = 'E
             </div>
             <div className="hp-notif-list">
               {NOTIFICATIONS.map((n) => (
-                <div key={n.id} className={`hp-notif-card hp-notif-${n.type}`}>
+                <div
+                  key={n.id}
+                  className={`hp-notif-card hp-notif-${n.type} ${n.type === 'action' ? 'hp-notif-action-clickable' : ''}`}
+                  onClick={() => {
+                    if (onNavigate) {
+                      if (n.appId) {
+                        onNavigate('applications', '', { appId: n.appId, serviceId: n.serviceId });
+                      } else {
+                        onNavigate('applications');
+                      }
+                    }
+                  }}
+                  style={{ cursor: 'pointer' }}
+                  title="Click to view action details"
+                >
                   <div className="hp-notif-dot">
                     <span>{n.icon}</span>
                   </div>
                   <div className="hp-notif-body">
-                    <span className={`hp-notif-label hp-notif-label-${n.type}`}>{n.label}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <span className={`hp-notif-label hp-notif-label-${n.type}`}>{n.label}</span>
+                      <span className="hp-notif-time">{n.time}</span>
+                    </div>
                     <p className="hp-notif-title">{n.title}</p>
                     <p className="hp-notif-desc">{n.desc}</p>
+                    {n.type === 'action' && (
+                      <div style={{ marginTop: '8px' }}>
+                        <span className="hp-notif-cta-link">
+                          Upload Document &amp; Resolve →
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <span className="hp-notif-time">{n.time}</span>
                 </div>
               ))}
             </div>
@@ -293,7 +328,20 @@ const HomePage = ({ username = 'Jason', onLogout, onNavigate, onAskAi, lang = 'E
               }
 
               return (
-                <div key={app.id} className="hp-app-item">
+                <div
+                  key={app.id}
+                  className="hp-app-item"
+                  onClick={() => {
+                    if (onNavigate) {
+                      if (app.appId) {
+                        onNavigate('applications', '', { appId: app.appId, serviceId: app.serviceId });
+                      } else {
+                        onNavigate('applications');
+                      }
+                    }
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
                   {/* Left part: Icon & Info */}
                   <div className="hp-app-item-left">
                     <div className={`hp-app-icon-wrapper ${iconClass}`}>
